@@ -1,5 +1,5 @@
-require 'rake/clean'
 # http://21ccw.blogspot.com/2008/04/using-rake-for-erlang-unit-testing.html
+require 'rake/clean'
 
 INCLUDE    = "include"
 ERLC_FLAGS = "-I#{INCLUDE} +warn_unused_vars +warn_unused_import"
@@ -13,9 +13,12 @@ rule ".beam" => ["%{ebin,src}X.erl"] do |t|
   sh "erlc -D EUNIT -pa ebin -W #{ERLC_FLAGS} -o ebin #{t.source}"
 end
 
+desc "Compile everything"
 task :compile => ['ebin'] + OBJ
+
 task :default => :compile
 
+desc "Run all tests"
 task :run_tests => [:compile] do
   puts "Modules under test:"
   OBJ.each do |obj|
