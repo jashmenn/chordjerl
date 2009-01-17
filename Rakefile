@@ -1,1 +1,1 @@
-Dir.glob(File.dirname(__FILE__) + "/priv/tasks/*.rake").each {|f| puts f;load f}
+Dir.glob(File.dirname(__FILE__) + "/priv/tasks/*.rake").each {|f| load f}
