@@ -1,0 +1,11 @@
+{author, {"Nate Murray", "nate@natemurray.com"}}.
+{packager, {"Nate Murray", "nate@natemurray.com"}}.
+{category, ["web", "todo"]}.
+{name, "chordjerl"}.
+{vsn, "0.0.1"}.
+{depends, ["kernel","stdlib"]}.
+{keywords, ["chord","p2p","dht","distributed hash table"]}.
+{summary, "Implementation of Chord Algorithm"}.
+{abstract, "Chord is a lookup protocol for efficient location of a node that stores adesired data item in a decentralized, peer-to-peer system. The Chord algorithm provides the foundation for a reliable, efficient, scalable decentralized distributed hash."
+{home, "http://github.com/jashmenn/chordjerl/tree/master"}.
+{sources, {git, "git://github.com/jashmenn/chordjerl.git"}}.
