@@ -19,7 +19,7 @@ task :compile => ['ebin'] + OBJ
 task :default => :compile
 
 desc "Run all tests"
-task :run_tests => [:compile] do
+task :test => [:compile] do
   puts "Modules under test:"
   OBJ.each do |obj|
     obj[%r{.*/(.*).beam}]
