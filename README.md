@@ -22,3 +22,13 @@ Status
 
 Planning stages
 
+(Planned) Features
+========
+
+ * Virtual Nodes
+ * Behavior module to help implement the value store
+ * Optional extensions to routing algorithm/finger table such as node uptime,
+   network latency, etc.
+ * Support for LAN or WAN use
+ 
+
