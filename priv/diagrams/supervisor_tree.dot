@@ -1,0 +1,16 @@
+digraph chordjerl 
+{
+n1      [label="virt node 1"]
+n2      [label="virt node 2"]
+nn      [label="virt node n"]
+n_c     [label="node_controller"]
+n_c_sup [label="node_controller_sup"]
+
+n_c -> n1
+n_c -> n2
+n_c -> nn
+
+n_c_sup -> n_c
+
+//n2 -> nn [style=dotted, arrowhead=none]
+}
