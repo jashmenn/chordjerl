@@ -3,5 +3,5 @@
 
 behaviour_info(callbacks) ->
     [{lookup, 1}, {store,2}];
-behavior_info(_) ->
+behaviour_info(_) ->
     undefined.

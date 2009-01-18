@@ -5,6 +5,7 @@
 %%% Obviously taken from Joe's book Programming Erlang
 %%% --------------------------------------------------------------------------
 -module(simple_kv_backing_store).
+-behaviour(gen_ch_backing_store).
 -export([start/0, store/2, lookup/1]).
 
 start() -> register(kvs, spawn(fun() -> loop() end)).
