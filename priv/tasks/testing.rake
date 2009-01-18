@@ -1,30 +1,51 @@
-# http://21ccw.blogspot.com/2008/04/using-rake-for-erlang-unit-testing.html
+# modified from http://21ccw.blogspot.com/2008/04/using-rake-for-erlang-unit-testing.html
 require 'rake/clean'
+require 'pp'
 
-INCLUDE    = "include"
+INCLUDE    = File.dirname(__FILE__) + "/include"
 ERLC_FLAGS = "-I#{INCLUDE} +warn_unused_vars +warn_unused_import"
+
 SRC        = FileList['src/*.erl']
-OBJ        = SRC.pathmap("%{src,ebin}X.beam")
-CLEAN.include("ebin/*.beam")
+SRC_OBJ    = SRC.pathmap("%{src,ebin}X.beam")
+
+TEST       = FileList['test/src/*.erl']
+TEST_OBJ   = TEST.pathmap("%{src,ebin}X.beam")
+
+CLEAN.include("ebin/*.beam", "test/ebin/*.beam")
 
 directory 'ebin'
+directory 'test/ebin'
 
-rule ".beam" => ["%{ebin,src}X.erl"] do |t|
-  sh "erlc -D EUNIT -pa ebin -W #{ERLC_FLAGS} -o ebin #{t.source}"
+rule( ".beam" => ["%{ebin,src}X.erl"] ) do |t|
+  testing  = t.source =~ /test\// ? true : false
+  eunit    = testing ? "-D EUNIT "  : ""
+  ebin_dir = testing ? "test/ebin"  : "ebin"
+  cmd = "erlc #{eunit}-pa ebin -W #{ERLC_FLAGS} -o #{ebin_dir} #{t.source}"
+  puts cmd
+  sh cmd
 end
 
 desc "Compile everything"
-task :compile => ['ebin'] + OBJ
+task :compile => ["src:compile", "test:compile"]
 
-task :default => :compile
+namespace :src do
+  desc "Compile src"
+  task :compile => ['ebin'] + SRC_OBJ
+end
+
+namespace :test do
+  desc "Compile tests"
+  task :compile => ['test/ebin'] + TEST_OBJ
+end
 
 desc "Run all tests"
-task :test => [:compile] do
+task :run_tests => :compile do
   puts "Modules under test:"
-  OBJ.each do |obj|
+  TEST_OBJ.each do |obj|
     obj[%r{.*/(.*).beam}]
     mod = $1
-    test_output = `erl -pa ebin -run #{mod} test -run init stop`
+    test_cmd = "erl -pa ebin -pa test/ebin -run #{mod} test -run init stop"
+    test_output = `#{test_cmd}`
 
     if /\*failed\*/ =~ test_output
       test_output[/(Failed.*Aborted.*Skipped.*Succeeded.*$)/]
