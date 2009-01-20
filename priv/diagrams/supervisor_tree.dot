@@ -1,16 +1,24 @@
 digraph chordjerl 
 {
-n1      [label="virt node 1"]
-n2      [label="virt node 2"]
-nn      [label="virt node n"]
-n_c     [label="node_controller"]
-n_c_sup [label="node_controller_sup"]
+    fontname = "Bitstream Vera Sans"
+    fontsize = 9
+    node [
+            fontname = "Bitstream Vera Sans"
+            fontsize = 9
+            shape = "record"
+    ]
 
-n_c -> n1
-n_c -> n2
-n_c -> nn
+    edge [
+            fontname = "Bitstream Vera Sans"
+            fontsize = 9
+    ]
 
-n_c_sup -> n_c
+chordjerl_server_sup [label="\N\n(gen_supervisor)"]
+chordjerl_server     [label="\N\n(gen_server)"]
+ch_node              [label="\N\n(gen_server)", shape=ellipse]
 
-//n2 -> nn [style=dotted, arrowhead=none]
+chordjerl_server_sup -> chordjerl_server
+chordjerl_server     -> ch_node [arrowhead=crow, headlabel="        0..*"]
 }
+
+
