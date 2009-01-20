@@ -9,7 +9,7 @@
 -include_lib("../include/defines.hrl").
 
 %% API
--export([start_link/0, add_node/0]).
+-export([start_link/0, add_node/0, ch_nodes/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -25,8 +25,13 @@
   %}).
 
 -record(state, {
-                   nodes = ?DICT:new()  % Dictionary of running nodes
-                }).
+    ch_nodes = []
+  }).
+
+%-record(ch_node, {
+    %number,
+    %id 
+  %}).
 
 %%====================================================================
 %% API
@@ -50,10 +55,17 @@ start_link() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    {ok, #state{}}.
+    {ok, #state{
+                    ch_nodes = []
+				}}.
+
 
 add_node() ->
     gen_server:call(?SERVER, {add_node}).
+
+ch_nodes() ->
+    gen_server:call(?SERVER, {ch_nodes}).
+
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -66,6 +78,9 @@ add_node() ->
 %%--------------------------------------------------------------------
 handle_call({add_node}, _From, State) ->
     Reply = handle_add_node(),
+    {reply, Reply, State};
+handle_call({ch_nodes}, _From, State) ->
+    Reply = State#state.ch_nodes,
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
