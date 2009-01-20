@@ -2,3 +2,4 @@ erl_crash.dump
 ebin
 *.beam
 .DS_Store
+session
