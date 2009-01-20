@@ -1,10 +1,10 @@
 %%%-------------------------------------------------------------------
-%%% File    : chordjerl_srv.erl
+%%% File    : ch_node.erl
 %%% Author  : Nate Murray <nate@natemurray.com>
 %%% Description : Chord server
 %%% Created     : 2009-01-18
 %%%-------------------------------------------------------------------
--module(chordjerl_srv).
+-module(ch_node).
 -behaviour(gen_server).
 -include_lib("../include/defines.hrl").
 
@@ -19,14 +19,7 @@
 -define(SERVER, ?MODULE).
 
 %% Records
-%-record(chordjerl_config, {
-        %max_nodes = 4,
-        %backing_store = simple_kv_backing_store
-  %}).
-
--record(state, {
-                   nodes = ?DICT:new()  % Dictionary of running nodes
-                }).
+-record(state, {}).
 
 %%====================================================================
 %% API
@@ -64,9 +57,6 @@ add_node() ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call({add_node}, _From, State) ->
-    Reply = handle_add_node(),
-    {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -109,8 +99,3 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-handle_add_node() ->
-    {added}.
-
-%% server needs to track the following node info:
-
