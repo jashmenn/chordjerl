@@ -18,21 +18,18 @@ registered process, everything connects to here. stores the whole server's ip
 stores basic configuration options such as:
  * the module that provides the backing store
  * the number of nodes we want
- * other config options
 
-ch_node_controller
-===============
-negotiates communication between nodes. 
+acts as the node controller and negotiates communication between nodes. 
   * creates and supervises all (virtual) nodes
   * assigns local node numbers
-
-(maybe the server should just be the node controller)
+(should the node controller be its own module?)
 
 ch_node
 ===============
-  * all nodes are virtual. If you only want one node, then set your number of
-    virtual nodes to one.
-  * has number, id
+All nodes are "virtual". If you only want one node, then set your number of
+virtual nodes to one.
+  * has local node number
+  * id = SHA(server.ip + local node number) 
   * has finger table
 
 gen_ch_backing_store (behavior)
