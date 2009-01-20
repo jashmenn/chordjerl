@@ -48,7 +48,7 @@ task :run_tests => :compile do
     puts test_cmd
     test_output = `#{test_cmd}`
     
-    puts test_output if $trace
+    puts test_output if Rake.application.options.trace
 
     if /\*failed\*/ =~ test_output
       test_output[/(Failed.*Aborted.*Skipped.*Succeeded.*$)/]
