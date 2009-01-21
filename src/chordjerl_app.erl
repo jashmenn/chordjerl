@@ -1,4 +1,4 @@
--module(chordjerl).
+-module(chordjerl_app).
 -export([bar1/0, bar2/0]).
 
 bar1() ->

@@ -20,7 +20,7 @@
 
 %% Records
 %-record(chordjerl_config, {
-        %backing_store = simple_kv_backing_store
+%        backing_store = simple_kv_backing_store
 %}).
 
 -record(state, {
@@ -30,6 +30,8 @@
 %%====================================================================
 %% API
 %%====================================================================
+
+
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
@@ -40,6 +42,65 @@ start_link() ->
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
+
+%%--------------------------------------------------------------------
+%% Function: create() -> 
+%% Description: create a new Chord ring.
+%%--------------------------------------------------------------------
+create() ->
+    gen_server:call(?SERVER, {create}).
+
+%%--------------------------------------------------------------------
+%% Function: join(Node) -> 
+%% Description: join a Chord ring containing Node.  
+%%--------------------------------------------------------------------
+join(Node) ->
+    gen_server:call(?SERVER, {join, Node}).
+
+%%--------------------------------------------------------------------
+%% Function: find_successor(Id) -> 
+%% Description: find the successor of Id
+%%--------------------------------------------------------------------
+find_successor(Id) ->
+    gen_server:call(?SERVER, {find_successor, Id}).
+
+%%--------------------------------------------------------------------
+%% Function: closest_preceding_node(Id) -> 
+%% Description: searc the local table for the highest predecessor if id
+%%--------------------------------------------------------------------
+closest_preceding_node(Id) ->
+    gen_server:call(?SERVER, {closest_preceding_node, Id}).
+
+%%--------------------------------------------------------------------
+%% Function: stabilize() -> 
+%% Description: called periodically. veriﬁes immediate successor, and tells the
+%%              successor about this node. 
+%%--------------------------------------------------------------------
+stabilize() ->
+    gen_server:call(?SERVER, {stabilize}).
+
+%%--------------------------------------------------------------------
+%% Function: claim_to_be_predecessor(Node) -> 
+%% Description: Node thinks it might be our predecessor
+%%--------------------------------------------------------------------
+claim_to_be_predecessor(Node) ->
+    gen_server:call(?SERVER, {claim_to_be_predecessor, Node}).
+
+%%--------------------------------------------------------------------
+%% Function: fix_fingers() -> 
+%% Description: called periodically. refreshes ﬁnger table entries.  
+%%              next stores the index of the next finger to fix.
+%%--------------------------------------------------------------------
+fix_fingers() ->
+    gen_server:call(?SERVER, {fix_fingers}).
+
+%%--------------------------------------------------------------------
+%% Function: check_predecessor() -> 
+%% Description: called periodically. checks whether predecessor has 
+%%              failed.
+%%--------------------------------------------------------------------
+check_predecessor() ->
+    gen_server:call(?SERVER, {check_predecessor}).
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
@@ -54,13 +115,6 @@ init([]) ->
 				}}.
 
 
-add_node() ->
-    gen_server:call(?SERVER, {add_node}).
-
-ch_nodes() ->
-    gen_server:call(?SERVER, {ch_nodes}).
-
-
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
 %%                                      {reply, Reply, State, Timeout} |
@@ -70,12 +124,14 @@ ch_nodes() ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call({add_node}, _From, State) ->
-    Reply = handle_add_node(),
+handle_call({create}, _From, State) ->
+    Reply = handle_create_ring(),
     {reply, Reply, State};
-handle_call({ch_nodes}, _From, State) ->
-    Reply = State#state.ch_nodes,
+
+handle_call({join, Node}, _From, State) ->
+    Reply = handle_join(Node),
     {reply, Reply, State};
+
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
