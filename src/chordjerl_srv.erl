@@ -11,7 +11,7 @@
 %% API
 -export([
          start_link/0,
-         create/0,
+         create_ring/0,
          join/1,
          find_successor/1,
          closest_preceding_node/1,
@@ -56,11 +56,11 @@ start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%--------------------------------------------------------------------
-%% Function: create() -> 
+%% Function: create_ring() -> 
 %% Description: create a new Chord ring.
 %%--------------------------------------------------------------------
-create() ->
-    gen_server:call(?SERVER, {create}).
+create_ring() ->
+    gen_server:call(?SERVER, {create_ring}).
 
 %%--------------------------------------------------------------------
 %% Function: join(Node) -> 
@@ -140,13 +140,37 @@ init([]) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call({create}, _From, State) ->
-    Reply = handle_create_ring(),
-    {reply, Reply, State};
+handle_call({create_ring}, _From, State) ->
+    {Reply, NewState} = handle_create_ring(State),
+    {reply, Reply, NewState};
 
 handle_call({join, Node}, _From, State) ->
-    Reply = handle_join(Node),
-    {reply, Reply, State};
+    {Reply, NewState} = handle_join(Node, State),
+    {reply, Reply, NewState};
+
+handle_call({find_successor, Id}, _From, State) ->
+    {Reply, NewState} = handle_find_successor(Id, State),
+    {reply, Reply, NewState};
+
+handle_call({closest_preceding_node, Id}, _From, State) ->
+    {Reply, NewState} = handle_closest_preceding_node(Id, State),
+    {reply, Reply, NewState};
+
+handle_call({stabilize}, _From, State) ->
+    {Reply, NewState} = handle_stabilize(State),
+    {reply, Reply, NewState};
+
+handle_call({claim_to_be_predecessor, Node}, _From, State) ->
+    {Reply, NewState} = handle_claim_to_be_predecessor(Node, State),
+    {reply, Reply, NewState};
+
+handle_call({fix_fingers}, _From, State) ->
+    {Reply, NewState} = handle_fix_fingers(State),
+    {reply, Reply, NewState};
+
+handle_call({check_predecessor}, _From, State) ->
+    {Reply, NewState} = handle_check_predecessor(State),
+    {reply, Reply, NewState};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -190,11 +214,26 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-handle_create_ring() ->
+handle_create_ring(State) ->
     {todo}.
 
-handle_join(Node) ->
+handle_join(Node, State) ->
     {todo}.
 
-%% server needs to track the following node info:
+handle_find_successor(Id, State) ->
+    {todo}.
 
+handle_closest_preceding_node(Id, State) ->
+    {todo}.
+
+handle_stabilize(State) ->
+    {todo}.
+
+handle_claim_to_be_predecessor(Node, State) -> 
+    {todo}.
+
+handle_fix_fingers(State) ->
+    {todo}.
+
+handle_check_predecessor(State) ->
+    {todo}.
