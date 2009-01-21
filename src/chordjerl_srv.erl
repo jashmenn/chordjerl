@@ -20,18 +20,12 @@
 
 %% Records
 %-record(chordjerl_config, {
-        %max_nodes = 4,
         %backing_store = simple_kv_backing_store
-  %}).
+%}).
 
 -record(state, {
     ch_nodes = []
   }).
-
-%-record(ch_node, {
-    %number,
-    %id 
-  %}).
 
 %%====================================================================
 %% API
