@@ -24,7 +24,13 @@
 %}).
 
 -record(state, {
-    ch_nodes = []
+    fingers = []
+  }).
+
+-record(finger, {
+    sha,
+    ip_address,
+    port
   }).
 
 %%====================================================================
