@@ -26,7 +26,8 @@ rule( ".beam" => ["%{ebin,src}X.erl"] ) do |t|
 end
 
 desc "Compile everything"
-task :compile => ["src:compile", "test:compile"]
+task :compile   => ["src:compile", "test:compile"]
+task :recompile => ["clean", "src:compile", "test:compile"]
 
 namespace :src do
   desc "Compile src"

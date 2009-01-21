@@ -127,7 +127,7 @@ check_predecessor() ->
 %%--------------------------------------------------------------------
 init([]) ->
     {ok, #state{
-                    ch_nodes = []
+                 fingers = []
 				}}.
 
 
@@ -190,8 +190,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-handle_add_node() ->
-    {added}.
+handle_create_ring() ->
+    {todo}.
+
+handle_join(Node) ->
+    {todo}.
 
 %% server needs to track the following node info:
 
