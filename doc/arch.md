@@ -35,8 +35,3 @@ virtual nodes to one.
 gen_ch_backing_store (behavior)
 ================
   * specifies the interface to be adheared to for the backing store
-
-chordjerl_client
-================
-code to connect to a node??
-
