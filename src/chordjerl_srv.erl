@@ -9,7 +9,17 @@
 -include_lib("../include/defines.hrl").
 
 %% API
--export([start_link/0, add_node/0, ch_nodes/0]).
+-export([
+         start_link/0,
+         create/0,
+         join/1,
+         find_successor/1,
+         closest_preceding_node/1,
+         stabilize/0,
+         claim_to_be_predecessor/1,
+         fix_fingers/0,
+         check_predecessor/0
+         ]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -44,10 +54,6 @@
 %%--------------------------------------------------------------------
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
 
 %%--------------------------------------------------------------------
 %% Function: create() -> 
@@ -107,6 +113,10 @@ fix_fingers() ->
 %%--------------------------------------------------------------------
 check_predecessor() ->
     gen_server:call(?SERVER, {check_predecessor}).
+
+%%====================================================================
+%% gen_server callbacks
+%%====================================================================
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
