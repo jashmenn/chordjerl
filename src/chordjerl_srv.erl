@@ -11,6 +11,7 @@
 %% API
 -export([
          start_link/0,
+         start_named/1,
          create_ring/0,
          join/1,
          find_successor/1,
@@ -18,7 +19,8 @@
          stabilize/0,
          claim_to_be_predecessor/1,
          fix_fingers/0,
-         check_predecessor/0
+         check_predecessor/0,
+         state/0
          ]).
 
 %% gen_server callbacks
@@ -28,13 +30,10 @@
 %% Macros
 -define(SERVER, ?MODULE).
 
-%% Records
-%-record(chordjerl_config, {
-%        backing_store = simple_kv_backing_store
-%}).
-
 -record(state, {
-    fingers = []
+    fingers = [],
+    predecessor,
+    backing_store = simple_kv_backing_store
   }).
 
 -record(finger, {
@@ -54,6 +53,10 @@
 %%--------------------------------------------------------------------
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+%% for testing multiple servers
+start_named(Name) ->
+    gen_server:start_link({local, Name}, ?MODULE, [], []).
 
 %%--------------------------------------------------------------------
 %% Function: create_ring() -> 
@@ -114,6 +117,15 @@ fix_fingers() ->
 check_predecessor() ->
     gen_server:call(?SERVER, {check_predecessor}).
 
+state() ->
+    gen_server:call(?SERVER, {return_state}).
+
+sha() ->
+    "1234".
+
+get_node() ->
+    gen_server:call(?SERVER, {return_node}).
+
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
@@ -126,10 +138,7 @@ check_predecessor() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    {ok, #state{
-                 fingers = []
-				}}.
-
+    {ok, #state{}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -172,6 +181,14 @@ handle_call({check_predecessor}, _From, State) ->
     {Reply, NewState} = handle_check_predecessor(State),
     {reply, Reply, NewState};
 
+handle_call({return_state}, _From, State) ->
+    Reply = State,
+    {reply, Reply, State};
+
+handle_call({return_node}, _From, State) ->
+    Reply = erlang:node(),
+    {reply, Reply, State};
+
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -212,16 +229,21 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %%--------------------------------------------------------------------
-%%% Internal functions
+%%% handle_* Internal functions
 %%--------------------------------------------------------------------
 handle_create_ring(State) ->
-    {todo}.
+    NewState = State#state{predecessor=undefined, fingers=[]},
+    {ok, NewState}.
 
 handle_join(Node, State) ->
-    {todo}.
+    NewSuccessor = rpc:call(Node, ?SERVER, find_successor, [sha()]),
+    {ok, NewFinger} = make_finger(NewSuccessor), 
+    NewFingers   = [NewFinger|fingers],
+    NewState     = State#state{predecessor=undefined,fingers=NewFingers},
+    {NewSuccessor, NewState}.
 
 handle_find_successor(Id, State) ->
-    {todo}.
+    {todo, State}.
 
 handle_closest_preceding_node(Id, State) ->
     {todo}.
@@ -237,3 +259,12 @@ handle_fix_fingers(State) ->
 
 handle_check_predecessor(State) ->
     {todo}.
+
+%%--------------------------------------------------------------------
+%%% Internal functions
+%%--------------------------------------------------------------------
+  
+make_finger(Node) ->
+  % use the utils to get the ip
+  {ok, #finger{}}.
+
