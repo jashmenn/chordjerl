@@ -24,6 +24,7 @@ setup2() ->
      {ok, _Pid3} = chordjerl_srv:start_named(testnode3),
      {ok}.
 
+% todo, import the records so we aren't comparing against these tuples all the time
 node_network_functional_test_() ->
   {
       setup, fun setup2/0,
@@ -33,15 +34,13 @@ node_network_functional_test_() ->
          State = gen_server:call(testnode1, {return_state}),
          ?assertEqual({state,[],undefined,simple_kv_backing_store}, State),
 
-         % what we are trying to do here:
-         % pass in to 'join' a piece of data like we are a foreign node, when
-         % really we are just a pid
-
          % join the first node
          Node = gen_server:call(testnode1, {return_node}),
-         erlang:display(Node),
-         Var = gen_server:call(testnode2, {join, Node}),
-         erlang:display(Var)
+         ok   = gen_server:call(testnode2, {join, Node}),
+         {state, Fingers, _predecessor, _backing} = gen_server:call(testnode2, {return_state}),
+         ?assertEqual(1, length(Fingers)),
+         Finger1 = lists:last(Fingers),
+         {finger, _Sha, todo, none, standard} = Finger1
       end
   }.
 

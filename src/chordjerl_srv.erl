@@ -38,8 +38,9 @@
 
 -record(finger, {
     sha,
-    ip_address,
-    port
+    node,
+    ip=none, 
+    port=standard
   }).
 
 %%====================================================================
@@ -238,9 +239,9 @@ handle_create_ring(State) ->
 handle_join(Node, State) ->
     NewSuccessor = rpc:call(Node, ?SERVER, find_successor, [sha()]),
     {ok, NewFinger} = make_finger(NewSuccessor), 
-    NewFingers   = [NewFinger|fingers],
+    NewFingers   = [NewFinger|State#state.fingers],
     NewState     = State#state{predecessor=undefined,fingers=NewFingers},
-    {NewSuccessor, NewState}.
+    {ok, NewState}.
 
 handle_find_successor(Id, State) ->
     {todo, State}.
@@ -264,7 +265,7 @@ handle_check_predecessor(State) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
   
-make_finger(Node) ->
-  % use the utils to get the ip
-  {ok, #finger{}}.
+make_finger(Node) -> % todo, this will probably need some thought/work...
+  Sha = sha1:binstring(atom_to_list(Node)), % or hexstring?
+  {ok, #finger{node=Node, sha=Sha}}.
 
