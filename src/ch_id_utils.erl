@@ -5,6 +5,7 @@
 %%% Created     : 2009-01-23
 %%%-------------------------------------------------------------------
 -module(ch_id_utils).
+-compile(export_all).
 
 %%--------------------------------------------------------------------
 %% Function: successor_id(CurrentId, Index) -> {ok,SuccessorId} 
@@ -13,3 +14,11 @@
 %%--------------------------------------------------------------------
 successor_id(CurrentId, Index) ->
   {ok}.
+
+%%--------------------------------------------------------------------
+%% Function: bbsl
+%% Description: Binary Shift Left
+%% From: http://is.gd/h4Xo
+%%--------------------------------------------------------------------
+bbsl(Bin,Shift) -> 
+  <<_:Shift,Rest/bits>> = Bin, <<Rest/bits,0:Shift>>.
