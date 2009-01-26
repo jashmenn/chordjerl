@@ -2,7 +2,14 @@
 
 -define(DICT, dict).
 
--record (node, {
-                hash_id,
-                number
-                }).
+-record(srv_state, {
+    fingers = [],
+    predecessor,
+    backing_store = simple_kv_backing_store,
+    sha
+  }).
+
+-record(finger, {
+    sha,
+    node
+  }).

@@ -24,8 +24,6 @@ hex_to_int_test_() ->
       end
   }.
 
-
-
 bin_shift_left_test_() ->
   {
       setup, fun setup/0,

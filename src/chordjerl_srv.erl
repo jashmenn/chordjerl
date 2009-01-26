@@ -30,23 +30,9 @@
 %% Macros
 -define(SERVER, ?MODULE).
 
--record(state, {
-    fingers = [],
-    predecessor,
-    backing_store = simple_kv_backing_store
-  }).
-
--record(finger, {
-    sha,
-    node,
-    ip=none, 
-    port=standard
-  }).
-
 %%====================================================================
 %% API
 %%====================================================================
-
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
@@ -139,7 +125,7 @@ get_node() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    {ok, #state{}}.
+    {ok, #srv_state{}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -233,17 +219,22 @@ code_change(_OldVsn, State, _Extra) ->
 %%% handle_* Internal functions
 %%--------------------------------------------------------------------
 handle_create_ring(State) ->
-    NewState = State#state{predecessor=undefined, fingers=[]},
+    NewState = State#srv_state{predecessor=undefined, fingers=[]},
     {ok, NewState}.
 
 handle_join(Node, State) ->
     NewSuccessor = rpc:call(Node, ?SERVER, find_successor, [sha()]),
     {ok, NewFinger} = make_finger(NewSuccessor), 
-    NewFingers   = [NewFinger|State#state.fingers],
-    NewState     = State#state{predecessor=undefined,fingers=NewFingers},
+    NewFingers   = [NewFinger|State#srv_state.fingers],
+    NewState     = State#srv_state{predecessor=undefined,fingers=NewFingers},
     {ok, NewState}.
 
 handle_find_successor(Id, State) ->
+    % if Id between State#srv_state.sha...successor_id(State))
+    %   return successor
+    % else
+    %   NewNode = closest_preceding_node(Id)
+    %   rpc:call(NewNode, ?SERVER, find_successor, [Id])
     {todo, State}.
 
 handle_closest_preceding_node(Id, State) ->
@@ -265,7 +256,14 @@ handle_check_predecessor(State) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
   
-make_finger(Node) -> % todo, this will probably need some thought/work...
-  Sha = sha1:binstring(atom_to_list(Node)), % or hexstring?
+make_finger(Node) ->
+  Sha = sha1:hexstring(atom_to_list(Node)), 
   {ok, #finger{node=Node, sha=Sha}}.
 
+%%--------------------------------------------------------------------
+%% Function: successor_id(State) -> Integer
+%% Description: returns the minimum integer for the successor's id
+%%--------------------------------------------------------------------
+successor_id(State) ->
+  ch_id_utils:successor_id(State#srv_state.sha, 1).
+  
