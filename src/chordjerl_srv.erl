@@ -107,8 +107,8 @@ check_predecessor() ->
 state() ->
     gen_server:call(?SERVER, {return_state}).
 
-sha() ->
-    "1234".
+%sha() ->
+    %"1234".
 
 get_node() ->
     gen_server:call(?SERVER, {return_node}).
@@ -125,7 +125,9 @@ get_node() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    {ok, #srv_state{}}.
+    IdString = atom_to_list(node()) ++ pid_to_list(self()),  % not sure about this
+    Sha = sha1:hexstring(IdString), 
+    {ok, #srv_state{sha=Sha}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -223,7 +225,7 @@ handle_create_ring(State) ->
     {ok, NewState}.
 
 handle_join(Node, State) ->
-    NewSuccessor = rpc:call(Node, ?SERVER, find_successor, [sha()]),
+    NewSuccessor = rpc:call(Node, ?SERVER, find_successor, [State#srv_state.sha]),
     {ok, NewFinger} = make_finger(NewSuccessor), 
     NewFingers   = [NewFinger|State#srv_state.fingers],
     NewState     = State#srv_state{predecessor=undefined,fingers=NewFingers},
@@ -257,7 +259,7 @@ handle_check_predecessor(State) ->
 %%--------------------------------------------------------------------
   
 make_finger(Node) ->
-  Sha = sha1:hexstring(atom_to_list(Node)), 
+  Sha = sha1:hexstring(atom_to_list(Node)), % no, the sha should already exist
   {ok, #finger{node=Node, sha=Sha}}.
 
 %%--------------------------------------------------------------------
