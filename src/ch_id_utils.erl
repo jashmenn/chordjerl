@@ -32,7 +32,7 @@ bbsl(Bin,Shift) ->
 hex_to_int(HexStr) ->
     {ok, Num, _} = io_lib:fread("~16u", HexStr),
     IntStr = hd(io_lib:format("~B", Num)),
-    io:format(user, "Hex: ~p Int: ~p~n", [HexStr, IntStr]),
+    % io:format(user, "Hex: ~p Int: ~p~n", [HexStr, IntStr]),
     list_to_integer(IntStr).
 
 

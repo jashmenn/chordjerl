@@ -259,6 +259,7 @@ handle_check_predecessor(State) ->
 %%--------------------------------------------------------------------
   
 make_finger(Node) ->
+  io:format(user, "the node is: ~p~n", [Node]),
   Sha = sha1:hexstring(atom_to_list(Node)), % no, the sha should already exist
   {ok, #finger{node=Node, sha=Sha}}.
 
