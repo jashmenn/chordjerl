@@ -7,6 +7,7 @@
 -module(chordjerl_srv).
 -behaviour(gen_server).
 -include_lib("../include/defines.hrl").
+-compile(export_all).
 
 %% API
 -export([
@@ -137,7 +138,7 @@ get_node() ->
 init([]) ->
     IdString = atom_to_list(node()) ++ pid_to_list(self()),  % not sure about this
     Sha = sha1:hexstring(IdString), 
-    ShaInt = hex_to_int(HexStr),              % for now, just store the finger as an int
+    ShaInt = ch_id_utils:hex_to_int(Sha),              % for now, just store the finger as an int
     {ok, #srv_state{sha=ShaInt}}.
 
 %%--------------------------------------------------------------------
@@ -277,8 +278,8 @@ handle_check_predecessor(State) ->
 make_finger(Node) ->
   %io:format("~p finger: the node is: ~p~n", [node(), Node]),
   Sha = sha1:hexstring(atom_to_list(Node)), % no, the sha should already exist TODO
-  ShaInt = hex_to_int(HexStr),              % for now, just store the finger as an int
-  {ok, #finger{node=Node, sha=Sha}}.
+  ShaInt = ch_id_utils:hex_to_int(Sha),  % for now, just store the finger as an int
+  {ok, #finger{node=Node, sha=ShaInt}}.
 
 %%--------------------------------------------------------------------
 %% Function: successor_id(State) -> Integer
@@ -286,8 +287,6 @@ make_finger(Node) ->
 %%--------------------------------------------------------------------
 successor_id(State) ->
   ch_id_utils:successor_id(State#srv_state.sha, 1).
-  
-
 
 %
 % Networking methods, to be exchanged with erltalk in time

@@ -30,16 +30,37 @@ successor_id_test_() ->
       fun () ->
         Values = [ 
                    % CurrentId     % Index    % Wanted
+                                              % todo, verify the math of the wanted values
+                   {[1,            1],         3},
                    {["1",          1],         3},
-                   {["a",          2],         2},
-                   {["64",         2],       100},
-                   {["3e8",        3],      1000},
-                   {["2710",       3],     10000},
-                   {["7b",         4],       123},
-                   {["955",        4],      2389},
-                   {["16e7e5d52b", 5],     98379879723}],
+                   {["a",          2],        14},
+                   {["64",         2],       104},
+                   {["3e8",        3],      1008},
+                   {["2710",       3],     10008},
+                   {["7b",         4],       139},
+                   {["955",        4],      2405},
+                   {["16e7e5d52b", 5],     98379879755}],
                
         [ ?assertEqual(Wanted, ch_id_utils:successor_id(CurrentId, Index)) || {[CurrentId, Index], Wanted} <- Values ]
+      end
+  }.
+
+id_in_segement_test_() ->
+  {
+      setup, fun setup/0,
+      fun () ->
+        Values = [ 
+            % {Start, End, QueryId, Wanted}
+              {0,      10,       5,  true},
+              {5,      10,       5, false},
+              {5,      10,       6,  true},
+              {100,    1,        6, false},
+              {100,    1,      101,  true}, % hmm...
+              {100,    1,       50, false}, 
+              {1,      1,        1,  true} 
+         ],
+               
+        [ ?assertEqual(Wanted, ch_id_utils:id_in_segment(Start, End, QueryId)) || {Start, End, QueryId, Wanted} <- Values ]
       end
   }.
 

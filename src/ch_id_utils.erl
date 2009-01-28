@@ -16,9 +16,11 @@
 %% Code ported from chord c code. Math needs a double check.
 %%--------------------------------------------------------------------
 successor_id(CurrentId, Index) ->
-  % io:format(user, "successor for: ~p ~p~n", [CurrentId, Index]),
   B = (1 bsl ?NBIT) - 1,
-  S = hex_to_int(CurrentId),
+  S = case is_list(CurrentId) of
+            true  ->  hex_to_int(CurrentId);
+            false ->  CurrentId
+      end,
   T = (1 bsl Index),
   SuccessorId = S + T,
   SuccessorIdAnd = SuccessorId band B,
@@ -37,6 +39,25 @@ hex_to_int(HexStr) ->
     IntStr = hd(io_lib:format("~B", Num)),
     % io:format(user, "Hex: ~p Int: ~p~n", [HexStr, IntStr]),
     list_to_integer(IntStr).
+
+%%--------------------------------------------------------------------
+%% Function: id_in_segment(Start, End, QueryId) -> true | false
+%% Description: 
+%% Looks for QueryId by examining the segment of the Chord ring moving
+%% clockwise from (but not including) Start until reaching (and including) End.
+%% Returns true if QueryId is in this range, false otherwise. Represents the
+%% notation (a, b] in the Chord paper.
+%%--------------------------------------------------------------------
+id_in_segment(Start, End, QueryId) when End > Start -> % common case
+      QueryId > Start andalso QueryId =< End;
+id_in_segment(Start, End, QueryId) when End == Start -> 
+      QueryId == End;
+% If Start > End e.g. Start = 100, End = 1, then we know we are trying to go
+% around the end of the ring. Therefore, if QueryId is 101 we return true, if
+% it is 50 we would return false.
+id_in_segment(Start, End, QueryId) -> 
+      QueryId > Start.
+
 
 %%--------------------------------------------------------------------
 %% Function: bbsl
