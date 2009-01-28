@@ -10,6 +10,7 @@
 
 %% API
 -export([
+         start/0,
          start_link/0,
          start_named/1,
          create_ring/0,
@@ -33,6 +34,12 @@
 %%====================================================================
 %% API
 %%====================================================================
+%%--------------------------------------------------------------------
+%% Function: start() -> {ok,Pid} | ignore | {error,Error}
+%% Description: Alias for start_link
+%%--------------------------------------------------------------------
+start() ->
+    start_link(). 
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
@@ -57,6 +64,9 @@ create_ring() ->
 %% Description: join a Chord ring containing Node.  
 %%--------------------------------------------------------------------
 join(Node) ->
+    io:format("join: the node is: ~p~n", [Node]),
+    pong = net_adm:ping(Node),
+    io:format("pong: the node is: ~p~n", [Node]),
     gen_server:call(?SERVER, {join, Node}).
 
 %%--------------------------------------------------------------------
@@ -225,7 +235,12 @@ handle_create_ring(State) ->
     {ok, NewState}.
 
 handle_join(Node, State) ->
+    io:format("in join: the node is: ~p~n", [Node]),
+    pong = net_adm:ping(Node),
+    %io:format("in join pong: the node is: ~p~n", [Node]),
     NewSuccessor = rpc:call(Node, ?SERVER, find_successor, [State#srv_state.sha]),
+    io:format("rpcd: the node is: ~p~n", [Node]),
+    io:format("NewSuccessor is: ~p~n", [NewSuccessor]),
     {ok, NewFinger} = make_finger(NewSuccessor), 
     NewFingers   = [NewFinger|State#srv_state.fingers],
     NewState     = State#srv_state{predecessor=undefined,fingers=NewFingers},
@@ -259,7 +274,7 @@ handle_check_predecessor(State) ->
 %%--------------------------------------------------------------------
   
 make_finger(Node) ->
-  io:format(user, "the node is: ~p~n", [Node]),
+  io:format("~p finger: the node is: ~p~n", [node(), Node]),
   Sha = sha1:hexstring(atom_to_list(Node)), % no, the sha should already exist
   {ok, #finger{node=Node, sha=Sha}}.
 
@@ -270,3 +285,20 @@ make_finger(Node) ->
 successor_id(State) ->
   ch_id_utils:successor_id(State#srv_state.sha, 1).
   
+
+
+%
+% Networking methods, to be exchanged with erltalk in time
+%
+connect_to_node(NodeLocation) ->
+    case net_adm:ping(NodeLocation) of
+        pong ->
+            global:sync(),
+            ok;
+        _ ->
+            receive
+                stop -> void
+            after ?RECONNECT_TIMEOUT ->
+                connect_to_node(NodeLocation)
+            end
+end.

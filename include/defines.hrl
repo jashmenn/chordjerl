@@ -1,6 +1,8 @@
 % Includes file for the Chordjerl
 
--define(DICT, dict).
+-define (DICT, dict).
+-define (TRACE(X, M), io:format("TRACE ~p:~p ~p ~p~n" ,[?MODULE, ?LINE, X, M])).
+-define (RECONNECT_TIMEOUT, 10000).
 
 -record(srv_state, {
     fingers = [],
@@ -13,3 +15,4 @@
     sha,
     node
   }).
+
