@@ -64,9 +64,9 @@ create_ring() ->
 %% Description: join a Chord ring containing Node.  
 %%--------------------------------------------------------------------
 join(Node) ->
-    io:format("join: the node is: ~p~n", [Node]),
+    %io:format("join: the node is: ~p~n", [Node]),
     pong = net_adm:ping(Node),
-    io:format("pong: the node is: ~p~n", [Node]),
+    %io:format("pong: the node is: ~p~n", [Node]),
     gen_server:call(?SERVER, {join, Node}).
 
 %%--------------------------------------------------------------------
@@ -137,7 +137,8 @@ get_node() ->
 init([]) ->
     IdString = atom_to_list(node()) ++ pid_to_list(self()),  % not sure about this
     Sha = sha1:hexstring(IdString), 
-    {ok, #srv_state{sha=Sha}}.
+    ShaInt = hex_to_int(HexStr),              % for now, just store the finger as an int
+    {ok, #srv_state{sha=ShaInt}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -235,12 +236,11 @@ handle_create_ring(State) ->
     {ok, NewState}.
 
 handle_join(Node, State) ->
-    io:format("in join: the node is: ~p~n", [Node]),
-    pong = net_adm:ping(Node),
-    %io:format("in join pong: the node is: ~p~n", [Node]),
+    %io:format("in join: the node is: ~p~n", [Node]),
+    % pong = net_adm:ping(Node),
     NewSuccessor = rpc:call(Node, ?SERVER, find_successor, [State#srv_state.sha]),
-    io:format("rpcd: the node is: ~p~n", [Node]),
-    io:format("NewSuccessor is: ~p~n", [NewSuccessor]),
+    %io:format("rpcd: the node is: ~p~n", [Node]),
+    %io:format("NewSuccessor is: ~p~n", [NewSuccessor]),
     {ok, NewFinger} = make_finger(NewSuccessor), 
     NewFingers   = [NewFinger|State#srv_state.fingers],
     NewState     = State#srv_state{predecessor=undefined,fingers=NewFingers},
@@ -273,9 +273,11 @@ handle_check_predecessor(State) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
   
+%%%%%%%%% TODO - this needs to have the node sha passed in, probably... set the sha in *one* place. in init
 make_finger(Node) ->
-  io:format("~p finger: the node is: ~p~n", [node(), Node]),
-  Sha = sha1:hexstring(atom_to_list(Node)), % no, the sha should already exist
+  %io:format("~p finger: the node is: ~p~n", [node(), Node]),
+  Sha = sha1:hexstring(atom_to_list(Node)), % no, the sha should already exist TODO
+  ShaInt = hex_to_int(HexStr),              % for now, just store the finger as an int
   {ok, #finger{node=Node, sha=Sha}}.
 
 %%--------------------------------------------------------------------

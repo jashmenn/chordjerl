@@ -24,6 +24,27 @@ hex_to_int_test_() ->
       end
   }.
 
+successor_id_test_() ->
+  {
+      setup, fun setup/0,
+      fun () ->
+        Values = [ 
+                   % CurrentId     % Index    % Wanted
+                   {["1",          1],         3},
+                   {["a",          2],         2},
+                   {["64",         2],       100},
+                   {["3e8",        3],      1000},
+                   {["2710",       3],     10000},
+                   {["7b",         4],       123},
+                   {["955",        4],      2389},
+                   {["16e7e5d52b", 5],     98379879723}],
+               
+        [ ?assertEqual(Wanted, ch_id_utils:successor_id(CurrentId, Index)) || {[CurrentId, Index], Wanted} <- Values ]
+      end
+  }.
+
+
+
 bin_shift_left_test_() ->
   {
       setup, fun setup/0,
