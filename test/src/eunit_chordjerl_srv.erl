@@ -54,9 +54,17 @@ node_network_functional_test_() ->
          ok     = gen_server:call(testnode3, {join, Node2}),
          State2 = gen_server:call(testnode3, {return_state}),
          ?assertEqual(1, length(State2#srv_state.fingers)),
-         % io:format(user, "~p~n", [State2])
          {ok}
       end
   }.
+
+successor_from_state_test_() ->
+      fun () ->
+         ?MOD:create_ring(),
+         State = ?MOD:state(),
+         ?assert(is_record(chordjerl_srv:successor(State), finger) == true),
+         % ?assertEqual({ok, Finger}, chordjerl_srv:successor(State)), % when you get a successor
+         {ok}
+      end.
 
 

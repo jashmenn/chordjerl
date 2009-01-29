@@ -61,14 +61,14 @@ create_ring() ->
     gen_server:call(?SERVER, {create_ring}).
 
 %%--------------------------------------------------------------------
-%% Function: join(Node) -> 
+%% Function: join(OtherNode) -> 
 %% Description: join a Chord ring containing Node.  
 %%--------------------------------------------------------------------
-join(Node) ->
+join(OtherNode) ->
     %io:format("join: the node is: ~p~n", [Node]),
-    pong = net_adm:ping(Node),
+    pong = net_adm:ping(OtherNode),
     %io:format("pong: the node is: ~p~n", [Node]),
-    gen_server:call(?SERVER, {join, Node}).
+    gen_server:call(?SERVER, {join, OtherNode}).
 
 %%--------------------------------------------------------------------
 %% Function: find_successor(Id) -> 
@@ -154,8 +154,8 @@ handle_call({create_ring}, _From, State) ->
     {Reply, NewState} = handle_create_ring(State),
     {reply, Reply, NewState};
 
-handle_call({join, Node}, _From, State) ->
-    {Reply, NewState} = handle_join(Node, State),
+handle_call({join, OtherNode}, _From, State) ->
+    {Reply, NewState} = handle_join(OtherNode, State),
     {reply, Reply, NewState};
 
 handle_call({find_successor, Id}, _From, State) ->
@@ -236,24 +236,47 @@ handle_create_ring(State) ->
     NewState = State#srv_state{predecessor=undefined, fingers=[]},
     {ok, NewState}.
 
-handle_join(Node, State) ->
-    %io:format("in join: the node is: ~p~n", [Node]),
-    % pong = net_adm:ping(Node),
-    NewSuccessor = rpc:call(Node, ?SERVER, find_successor, [State#srv_state.sha]),
-    %io:format("rpcd: the node is: ~p~n", [Node]),
-    %io:format("NewSuccessor is: ~p~n", [NewSuccessor]),
-    {ok, NewFinger} = make_finger(NewSuccessor), 
-    NewFingers   = [NewFinger|State#srv_state.fingers],
-    NewState     = State#srv_state{predecessor=undefined,fingers=NewFingers},
-    {ok, NewState}.
+% If you don't have any fingers, then 
+%handle_join(OtherNode, State) when length(State#srv_state.fingers) == 0 ->
+   %NewFinger  = make_finger_from_self(State),
+   %NewFingers = [NewFinger|State#srv_state.fingers],
+   %NewState   = State#srv_state{predecessor=undefined,fingers=NewFingers},
+   %{ok, NewState};
+handle_join(OtherNode, State) ->
+    Response = rpc:call(OtherNode, ?SERVER, find_successor, [State#srv_state.sha]),
+    case Response of
+        {ok, NewFinger} -> 
+            NewFingers   = [NewFinger|State#srv_state.fingers],
+            NewState     = State#srv_state{predecessor=undefined,fingers=NewFingers},
+            {ok, NewState};
+        _Err ->
+            ?TRACE("bad response", Response),
+            {uhh, State} % todo
+    end.
 
+%%--------------------------------------------------------------------
+%% Function: handle_find_successor(Id, State) -> {{ok, SuccessorFinger}, NewState}
+%% Description: find the successor of Id
+%% returns in finger format
+%%--------------------------------------------------------------------
 handle_find_successor(Id, State) ->
-    % if Id between State#srv_state.sha...successor_id(State))
-    %   return successor
-    % else
-    %   NewNode = closest_preceding_node(Id)
-    %   rpc:call(NewNode, ?SERVER, find_successor, [Id])
-    {todo, State}.
+    SuccessorFinger = successor(State),
+    SuccessorId = SuccessorFinger#finger.sha,
+    case State#srv_state.sha == SuccessorId of
+        true ->
+            {{ok, SuccessorFinger}, State}; % if successor is self, return self
+        false ->
+            case ch_id_utils:id_in_segment(State#srv_state.sha, SuccessorId, Id) of
+                true  -> 
+                   {{ok, SuccessorFinger}, State};
+                false -> 
+                   % find recursively
+                   % NewNode = closest_preceding_node(Id)
+                   % rpc:call(NewNode, ?SERVER, find_successor, [Id])
+                   ?TRACE("returning closest preceding node", [State#srv_state.sha, SuccessorId, Id]),
+                   {todo, closest_preceding_node} % todo
+            end
+    end.
 
 handle_closest_preceding_node(Id, State) ->
     {todo}.
@@ -274,32 +297,30 @@ handle_check_predecessor(State) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
   
-%%%%%%%%% TODO - this needs to have the node sha passed in, probably... set the sha in *one* place. in init
-make_finger(Node) ->
-  %io:format("~p finger: the node is: ~p~n", [node(), Node]),
-  Sha = sha1:hexstring(atom_to_list(Node)), % no, the sha should already exist TODO
-  ShaInt = ch_id_utils:hex_to_int(Sha),  % for now, just store the finger as an int
-  {ok, #finger{node=Node, sha=ShaInt}}.
+%%--------------------------------------------------------------------
+%% Function: successor(State) -> {ok, #finger} | {none} 
+%% Description: returns the immediate successor of this node. 
+%%--------------------------------------------------------------------
+successor(State) when length(State#srv_state.fingers) >= 1 ->
+  hd(State#srv_state.fingers);
+successor(State) -> % if no successors then return self as finger
+  make_finger_from_self(State).
 
-%%--------------------------------------------------------------------
-%% Function: successor_id(State) -> Integer
-%% Description: returns the minimum integer for the successor's id
-%%--------------------------------------------------------------------
-successor_id(State) ->
-  ch_id_utils:successor_id(State#srv_state.sha, 1).
+make_finger_from_self(State) ->
+  #finger{sha=State#srv_state.sha, node=node()}.
 
 %
 % Networking methods, to be exchanged with erltalk in time
 %
-connect_to_node(NodeLocation) ->
-    case net_adm:ping(NodeLocation) of
-        pong ->
-            global:sync(),
-            ok;
-        _ ->
-            receive
-                stop -> void
-            after ?RECONNECT_TIMEOUT ->
-                connect_to_node(NodeLocation)
-            end
-end.
+%connect_to_node(NodeLocation) ->
+    %case net_adm:ping(NodeLocation) of
+        %pong ->
+            %global:sync(),
+            %ok;
+        %_ ->
+            %receive
+                %stop -> void
+            %after ?RECONNECT_TIMEOUT ->
+                %connect_to_node(NodeLocation)
+            %end
+%end.
