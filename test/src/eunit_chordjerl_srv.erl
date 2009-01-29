@@ -40,11 +40,14 @@ node_network_functional_test_() ->
       fun () ->
          % grab testnode1 state
          State1 = gen_server:call(testnode1, {return_state}),
+         ?NTRACE("state1 is:", [State1]),
 
          % join the second node to the first 
          Node = gen_server:call(testnode1, {return_node}),
          ok   = gen_server:call(testnode2, {join, Node}),
-         {srv_state, Fingers, _Predecessor, _Backing, _Sha1} = gen_server:call(testnode2, {return_state}),
+         State2 = gen_server:call(testnode2, {return_state}),
+         ?NTRACE("state2 is:", [State2]),
+         {srv_state, Fingers, _Predecessor, _Backing, _Sha1} = State2,
          ?assertEqual(1, length(Fingers)),
          Finger1 = lists:last(Fingers),
          {finger, _Sha2, _Node1} = Finger1,
@@ -54,19 +57,24 @@ node_network_functional_test_() ->
          % join the third node to the second
          Node2  = gen_server:call(testnode2, {return_node}),
          ok     = gen_server:call(testnode3, {join, Node2}),
-         State2 = gen_server:call(testnode3, {return_state}),
-         ?assertEqual(1, length(State2#srv_state.fingers)),
+         State3 = gen_server:call(testnode3, {return_state}),
+         ?NTRACE("state3 is:", [State3]),
+         ?assertEqual(1, length(State3#srv_state.fingers)),
 
-         % 
-         % {ok, Finger1} = gen_server:call(testnode1, {find_successor}),
-         Response = gen_server:call(testnode1, {find_successor, State1#srv_state.sha}),
-         ?TRACE("testnode1 find successor", [Response]),
+         {ok, Successor1} = gen_server:call(testnode1, {find_successor, State1#srv_state.sha}),
+         ?NTRACE("testnode1 find successor", [Successor1]),
 
-         %{ok, Finger2} = gen_server:call(testnode2, {find_successor}),
-         %?TRACE("testnode2 find successor", [Finger2]),
+         %{ok, Successor2} = gen_server:call(testnode2, {find_successor, State2#srv_state.sha}),
+         Response = gen_server:call(testnode2, {find_successor, State2#srv_state.sha}),
 
-         %{ok, Finger3} = gen_server:call(testnode3, {find_successor}),
-         %?TRACE("testnode3 find successor", [Finger3]),
+         ?NTRACE("testnode2 find successor", [Response]),
+
+         %%%  
+
+         %?NTRACE("testnode2 find successor", [Successor2]),
+
+         %{ok, Successor3} = gen_server:call(testnode3, {find_successor, State3#srv_state.sha}),
+         %?NTRACE("testnode3 find successor", [Successor3]),
 
          {ok}
       end
