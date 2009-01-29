@@ -257,24 +257,38 @@ handle_join(OtherNode, State) ->
 handle_find_successor(Id, State) ->
     SuccessorFinger = successor(State),
     SuccessorId = SuccessorFinger#finger.sha,
+    ?TRACE("handle find successor", [State#srv_state.sha, SuccessorId, Id]),
     case State#srv_state.sha == SuccessorId of
         true ->
+            ?TRACE("returning self", [State#srv_state.sha, SuccessorId, Id]),
             {{ok, SuccessorFinger}, State}; % if successor is self, return self
         false ->
+            ?TRACE("checking fingers", [State#srv_state.sha, SuccessorId, Id]),
             case ch_id_utils:id_in_segment(State#srv_state.sha, SuccessorId, Id) of
                 true  -> 
+                   ?TRACE("it's successor", [State#srv_state.sha, SuccessorId, Id]),
                    {{ok, SuccessorFinger}, State};
                 false -> 
                    % find recursively
-                   % NewNode = closest_preceding_node(Id)
-                   % rpc:call(NewNode, ?SERVER, find_successor, [Id])
                    ?TRACE("returning closest preceding node", [State#srv_state.sha, SuccessorId, Id]),
-                   {todo, closest_preceding_node} % todo
+                   {ok, Finger} = closest_preceding_node(Id),
+                   rpc:call(Finger#finger.node, ?SERVER, find_successor, [Id])
             end
     end.
 
 handle_closest_preceding_node(Id, State) ->
-    {todo}.
+    FingersR = lists:reverse(State#srv_state.fingers), % fingers are stored in ascending order
+    handle_closest_preceding_node(Id, State, FingersR).
+
+handle_closest_preceding_node(Id, State, [Finger|T]) ->
+    case ch_id_utils:id_in_segment(State#srv_state.sha, Finger#finger.sha, Id) of
+        true  -> 
+           {{ok, Finger}, State};
+        false -> 
+           handle_closest_preceding_node(Id, State, T) 
+    end;
+handle_closest_preceding_node(Id, State, []) ->
+    {{ok, make_finger_from_self(State)}, State}.
 
 handle_stabilize(State) ->
     {todo}.

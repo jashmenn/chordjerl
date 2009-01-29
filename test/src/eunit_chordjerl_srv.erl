@@ -26,18 +26,20 @@ setup2() ->
      {ok, _Pid1} = chordjerl_srv:start_named(testnode1),
      {ok, _Pid2} = chordjerl_srv:start_named(testnode2),
      {ok, _Pid3} = chordjerl_srv:start_named(testnode3),
+     
+     % init the first node
+     ok    = gen_server:call(testnode1, {create_ring}),
      {ok}.
 
-% todo, import the records so we aren't comparing against these tuples all the time
-% todo, we're kind of breaking encapsulation with calling gen_server directly.
-% maybe we need api/1 calls that take the server as an argument?
+% Todo. We're kind of breaking encapsulation with calling gen_server directly.
+% but it seems preferable over writing API methods that will accept a name.
+% Maybe we need api/1 calls that take the server as an argument? Maybe not.
 node_network_functional_test_() ->
   {
       setup, fun setup2/0,
       fun () ->
-         % init the first node
-         ok    = gen_server:call(testnode1, {create_ring}),
-         State = gen_server:call(testnode1, {return_state}),
+         % grab testnode1 state
+         State1 = gen_server:call(testnode1, {return_state}),
 
          % join the second node to the first 
          Node = gen_server:call(testnode1, {return_node}),
@@ -54,6 +56,18 @@ node_network_functional_test_() ->
          ok     = gen_server:call(testnode3, {join, Node2}),
          State2 = gen_server:call(testnode3, {return_state}),
          ?assertEqual(1, length(State2#srv_state.fingers)),
+
+         % 
+         % {ok, Finger1} = gen_server:call(testnode1, {find_successor}),
+         Response = gen_server:call(testnode1, {find_successor, State1#srv_state.sha}),
+         ?TRACE("testnode1 find successor", [Response]),
+
+         %{ok, Finger2} = gen_server:call(testnode2, {find_successor}),
+         %?TRACE("testnode2 find successor", [Finger2]),
+
+         %{ok, Finger3} = gen_server:call(testnode3, {find_successor}),
+         %?TRACE("testnode3 find successor", [Finger3]),
+
          {ok}
       end
   }.
@@ -66,5 +80,3 @@ successor_from_state_test_() ->
          % ?assertEqual({ok, Finger}, chordjerl_srv:successor(State)), % when you get a successor
          {ok}
       end.
-
-
