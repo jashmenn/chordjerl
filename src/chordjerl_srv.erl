@@ -65,9 +65,7 @@ create_ring() ->
 %% Description: join a Chord ring containing Node.  
 %%--------------------------------------------------------------------
 join(OtherNode) ->
-    %io:format("join: the node is: ~p~n", [Node]),
     pong = net_adm:ping(OtherNode),
-    %io:format("pong: the node is: ~p~n", [Node]),
     gen_server:call(?SERVER, {join, OtherNode}).
 
 %%--------------------------------------------------------------------
@@ -117,9 +115,6 @@ check_predecessor() ->
 
 state() ->
     gen_server:call(?SERVER, {return_state}).
-
-%sha() ->
-    %"1234".
 
 get_node() ->
     gen_server:call(?SERVER, {return_node}).
@@ -309,18 +304,3 @@ successor(State) -> % if no successors then return self as finger
 make_finger_from_self(State) ->
   #finger{sha=State#srv_state.sha, node=node()}.
 
-%
-% Networking methods, to be exchanged with erltalk in time
-%
-%connect_to_node(NodeLocation) ->
-    %case net_adm:ping(NodeLocation) of
-        %pong ->
-            %global:sync(),
-            %ok;
-        %_ ->
-            %receive
-                %stop -> void
-            %after ?RECONNECT_TIMEOUT ->
-                %connect_to_node(NodeLocation)
-            %end
-%end.
