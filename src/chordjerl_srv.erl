@@ -65,15 +65,21 @@ create_ring() ->
 %% Description: join a Chord ring containing Node.  
 %%--------------------------------------------------------------------
 join(OtherNode) ->
-    pong = net_adm:ping(OtherNode),
     gen_server:call(?SERVER, {join, OtherNode}).
 
 %%--------------------------------------------------------------------
 %% Function: find_successor(Id) -> 
-%% Description: find the successor of Id
+%% Description: find best/cloest known successor of Id
 %%--------------------------------------------------------------------
 find_successor(Id) ->
     gen_server:call(?SERVER, {find_successor, Id}).
+
+%%--------------------------------------------------------------------
+%% Function: immediate_successor() -> 
+%% Description: return the successor of this node
+%%--------------------------------------------------------------------
+immediate_successor() ->
+    gen_server:call(?SERVER, {immediate_successor}).
 
 %%--------------------------------------------------------------------
 %% Function: closest_preceding_node(Id) -> 
@@ -157,6 +163,10 @@ handle_call({find_successor, Id}, _From, State) ->
     {Reply, NewState} = handle_find_successor(Id, State),
     {reply, Reply, NewState};
 
+handle_call({immediate_successor}, _From, State) ->
+    {Reply, NewState} = handle_immediate_successor(State),
+    {reply, Reply, NewState};
+
 handle_call({closest_preceding_node, Id}, _From, State) ->
     {Reply, NewState} = handle_closest_preceding_node(Id, State),
     {reply, Reply, NewState};
@@ -186,7 +196,7 @@ handle_call({return_node}, _From, State) ->
     {reply, Reply, State};
 
 handle_call(_Request, _From, State) ->
-    Reply = ok,
+    Reply = invalid,
     {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
@@ -231,13 +241,9 @@ handle_create_ring(State) ->
     NewState = State#srv_state{predecessor=undefined, fingers=[]},
     {ok, NewState}.
 
-% If you don't have any fingers, then 
-%handle_join(OtherNode, State) when length(State#srv_state.fingers) == 0 ->
-   %NewFinger  = make_finger_from_self(State),
-   %NewFingers = [NewFinger|State#srv_state.fingers],
-   %NewState   = State#srv_state{predecessor=undefined,fingers=NewFingers},
-   %{ok, NewState};
 handle_join(OtherNode, State) ->
+    _Pong = net_adm:ping(OtherNode), % ... get it working in testing
+    ?NTRACE("handle join of other node", [OtherNode]),
     Response = rpc:call(OtherNode, ?SERVER, find_successor, [State#srv_state.sha]),
     case Response of
         {ok, NewFinger} -> 
@@ -255,9 +261,11 @@ handle_join(OtherNode, State) ->
 %% returns in finger format
 %%--------------------------------------------------------------------
 handle_find_successor(Id, State) ->
+    ?NTRACE("handle find successor", [State]),
     SuccessorFinger = successor(State),
+    ?NTRACE("successor finger is", [SuccessorFinger]),
     SuccessorId = SuccessorFinger#finger.sha,
-    ?NTRACE("handle find successor", [State#srv_state.sha, SuccessorId, Id]),
+    ?NTRACE("handle find successor values", [State#srv_state.sha, SuccessorId, Id]),
     case State#srv_state.sha == SuccessorId of
         true ->
             ?NTRACE("returning self", [node(), self()]),
@@ -275,6 +283,9 @@ handle_find_successor(Id, State) ->
                    rpc:call(Finger#finger.node, ?SERVER, find_successor, [Id])
             end
     end.
+
+handle_immediate_successor(State) ->
+    {successor(State), State}.
 
 handle_closest_preceding_node(Id, State) ->
     FingersR = lists:reverse(State#srv_state.fingers), % fingers are stored in ascending order

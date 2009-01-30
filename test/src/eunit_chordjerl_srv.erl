@@ -21,15 +21,26 @@ tracking_nodes_test_() ->
       end
   }.
 
-setup2() ->
+setup2() -> % todo, figure out how to tear-down
      % start three nodes
-     {ok, _Pid1} = chordjerl_srv:start_named(testnode1),
-     {ok, _Pid2} = chordjerl_srv:start_named(testnode2),
-     {ok, _Pid3} = chordjerl_srv:start_named(testnode3),
+     chordjerl_srv:start_named(testnode1),
+     chordjerl_srv:start_named(testnode2),
+     chordjerl_srv:start_named(testnode3),
      
      % init the first node
-     ok    = gen_server:call(testnode1, {create_ring}),
+     ok = gen_server:call(testnode1, {create_ring}),
      {ok}.
+
+node_state_test_() ->
+  {
+      setup, fun setup2/0,
+      fun () ->
+         State1 = gen_server:call(testnode1, {return_state}),
+         ?assert(is_record(State1, srv_state) == true),
+         {ok}
+      end
+  }.
+
 
 % Todo. We're kind of breaking encapsulation with calling gen_server directly.
 % but it seems preferable over writing API methods that will accept a name.
@@ -38,26 +49,22 @@ node_network_functional_test_() ->
   {
       setup, fun setup2/0,
       fun () ->
-         % grab testnode1 state
-         State1 = gen_server:call(testnode1, {return_state}),
-         ?NTRACE("state1 is:", [State1]),
+         Node1   = gen_server:call(testnode1, {return_node}),
+         State1  = gen_server:call(testnode1, {return_state}),
+         Finger1 = gen_server:call(testnode1, {immediate_successor}),
+         ?assertEqual(State1#srv_state.sha, Finger1#finger.sha), % Node1 successor should be itself
 
          % join the second node to the first 
-         Node   = gen_server:call(testnode1, {return_node}),
-         ok     = gen_server:call(testnode2, {join, Node}),
-
+         ok     = gen_server:call(testnode2, {join, Node1}),
          State2 = gen_server:call(testnode2, {return_state}),
          ?NTRACE("state2 is:", [State2]),
 
          % verify fingers
          {srv_state, Fingers, _Predecessor, _Backing, _Sha1} = State2,
          ?assertEqual(1, length(Fingers)),
-         Finger1 = lists:last(Fingers),
-         {finger, Sha2, _Node1} = Finger1,
-
-         % successor finger should be... ?
-         % ?assertEqual(State1#srv_state.sha, Sha2),
-         ?assertEqual(State2#srv_state.sha, Sha2),
+         Finger2 = hd(Fingers),
+         {finger, Sha2, _Node1} = Finger2,
+         ?assertEqual(State1#srv_state.sha, Sha2), % first finger should now be Node1 sha
 
          % here we need to stabilize and make sure the first node becomes
          % connected to the second
