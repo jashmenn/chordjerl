@@ -15,6 +15,7 @@
 
 -record(finger, {
     sha,
-    node
+    node,
+    pid
   }).
 

@@ -327,5 +327,5 @@ successor(State) -> % if no successors then return self as finger
   make_finger_from_self(State).
 
 make_finger_from_self(State) ->
-  #finger{sha=State#srv_state.sha, node=node()}.
+  #finger{sha=State#srv_state.sha, node=node(), pid=self()}.
 
