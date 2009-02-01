@@ -19,7 +19,6 @@
 %%         Res = term()
 %%--------------------------------------------------------------------
 send(Finger, Message) ->
-    ?NTRACE("sending message to other node", [Finger, Message]),
     % rpc:call on a node doesn't work in testing because these are all the same
     % node, just different pids. just using gen_server:call till talk is ready
     gen_server:call(Finger#finger.pid, Message).

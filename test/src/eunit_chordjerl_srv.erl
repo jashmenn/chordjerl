@@ -50,7 +50,7 @@ node_network_functional_test_() ->
       setup, fun setup2/0,
       fun () ->
          Node1   = gen_server:call(testnode1, {return_finger_ref}),
-         ?NTRACE("node1 is:", [Node1]),
+         % ?NTRACE("node1 is:", [Node1]),
          ?assert(is_record(Node1, finger) == true),
          State1  = gen_server:call(testnode1, {return_state}),
          Finger1 = gen_server:call(testnode1, {immediate_successor}),
@@ -59,7 +59,7 @@ node_network_functional_test_() ->
          % join the second node to the first 
          ok     = gen_server:call(testnode2, {join, Node1}),
          State2 = gen_server:call(testnode2, {return_state}),
-         ?NTRACE("state2 is:", [State2]),
+         % ?NTRACE("state2 is:", [State2]),
 
          % verify fingers
          {srv_state, Fingers, _Predecessor, _Backing, _Sha1} = State2,

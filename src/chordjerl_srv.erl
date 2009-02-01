@@ -263,27 +263,18 @@ handle_join(Finger, State) ->
 %% returns in finger format
 %%--------------------------------------------------------------------
 handle_find_successor(Id, State) ->
-    ?NTRACE("handle find successor", [State]),
     SuccessorFinger = successor(State),
-    ?NTRACE("successor finger is", [SuccessorFinger]),
     SuccessorId = SuccessorFinger#finger.sha,
-    ?NTRACE("handle find successor values", [State#srv_state.sha, SuccessorId, Id]),
     case State#srv_state.sha == SuccessorId of
         true ->
-            ?NTRACE("returning self", [node(), self()]),
             {{ok, SuccessorFinger}, State}; % if successor is self, return self
         false ->
-            ?NTRACE("checking fingers", []),
             case ch_id_utils:id_in_segment(State#srv_state.sha, SuccessorId, Id) of
                 true  -> 
-                   ?NTRACE("it's successor", []),
                    {{ok, SuccessorFinger}, State};
-                false -> 
-                   % find recursively
-                   ?NTRACE("returning closest preceding node", []),
+                false -> % find recursively
                    {ok, Finger} = closest_preceding_node(Id),
                    chordjerl_com:send(Finger, {find_successor, Id})
-                   %rpc:call(Finger#finger.node, ?SERVER, find_successor, [Id])
             end
     end.
 
