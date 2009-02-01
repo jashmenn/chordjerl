@@ -49,7 +49,9 @@ node_network_functional_test_() ->
   {
       setup, fun setup2/0,
       fun () ->
-         Node1   = gen_server:call(testnode1, {return_node}),
+         Node1   = gen_server:call(testnode1, {return_finger_ref}),
+         ?NTRACE("node1 is:", [Node1]),
+         ?assert(is_record(Node1, finger) == true),
          State1  = gen_server:call(testnode1, {return_state}),
          Finger1 = gen_server:call(testnode1, {immediate_successor}),
          ?assertEqual(State1#srv_state.sha, Finger1#finger.sha), % Node1 successor should be itself
@@ -63,13 +65,13 @@ node_network_functional_test_() ->
          {srv_state, Fingers, _Predecessor, _Backing, _Sha1} = State2,
          ?assertEqual(1, length(Fingers)),
          Finger2 = hd(Fingers),
-         {finger, Sha2, _Node1} = Finger2,
+         Sha2 = Finger2#finger.sha,
          ?assertEqual(State1#srv_state.sha, Sha2), % first finger should now be Node1 sha
 
          % here we need to stabilize and make sure the first node becomes
          % connected to the second
          % join the third node to the second
-         % Node2  = gen_server:call(testnode2, {return_node}),
+         % Node2  = gen_server:call(testnode2, {return_finger_ref}),
          %ok     = gen_server:call(testnode3, {join, Node2}),
          %State3 = gen_server:call(testnode3, {return_state}),
          %?NTRACE("state3 is:", [State3]),

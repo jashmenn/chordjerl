@@ -122,8 +122,12 @@ check_predecessor() ->
 state() ->
     gen_server:call(?SERVER, {return_state}).
 
-get_node() ->
-    gen_server:call(?SERVER, {return_node}).
+%%--------------------------------------------------------------------
+%% Function: get_finger_ref() -> Finger
+%% Description: returns a reference to this node in finger format
+%%--------------------------------------------------------------------
+get_finger_ref() ->
+    gen_server:call(?SERVER, {return_finger_ref}).
 
 %%====================================================================
 %% gen_server callbacks
@@ -191,9 +195,9 @@ handle_call({return_state}, _From, State) ->
     Reply = State,
     {reply, Reply, State};
 
-handle_call({return_node}, _From, State) ->
-    Reply = erlang:node(),
-    {reply, Reply, State};
+handle_call({return_finger_ref}, _From, State) ->
+    {Reply, NewState} = handle_return_finger_ref(State),
+    {reply, Reply, NewState};
 
 handle_call(_Request, _From, State) ->
     Reply = invalid,
@@ -241,10 +245,8 @@ handle_create_ring(State) ->
     NewState = State#srv_state{predecessor=undefined, fingers=[]},
     {ok, NewState}.
 
-handle_join(OtherNode, State) ->
-    _Pong = net_adm:ping(OtherNode), % ... get it working in testing
-    ?NTRACE("handle join of other node", [OtherNode]),
-    Response = rpc:call(OtherNode, ?SERVER, find_successor, [State#srv_state.sha]),
+handle_join(Finger, State) ->
+    Response = chordjerl_com:send(Finger, {find_successor, State#srv_state.sha}),
     case Response of
         {ok, NewFinger} -> 
             NewFingers   = [NewFinger|State#srv_state.fingers],
@@ -280,7 +282,8 @@ handle_find_successor(Id, State) ->
                    % find recursively
                    ?NTRACE("returning closest preceding node", []),
                    {ok, Finger} = closest_preceding_node(Id),
-                   rpc:call(Finger#finger.node, ?SERVER, find_successor, [Id])
+                   chordjerl_com:send(Finger, {find_successor, Id})
+                   %rpc:call(Finger#finger.node, ?SERVER, find_successor, [Id])
             end
     end.
 
@@ -312,6 +315,9 @@ handle_fix_fingers(State) ->
 
 handle_check_predecessor(State) ->
     {todo}.
+
+handle_return_finger_ref(State) ->
+    {make_finger_from_self(State), State}.
 
 %%--------------------------------------------------------------------
 %%% Internal functions
