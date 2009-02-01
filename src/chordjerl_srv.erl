@@ -141,9 +141,7 @@ get_finger_ref() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    IdString = atom_to_list(node()) ++ pid_to_list(self()),  % not sure about this
-    Sha = sha1:hexstring(IdString), 
-    ShaInt = ch_id_utils:hex_to_int(Sha),              % for now, just store the finger as an int
+    ShaInt = make_sha([]),
     {ok, #srv_state{sha=ShaInt}}.
 
 %%--------------------------------------------------------------------
@@ -199,6 +197,10 @@ handle_call({return_finger_ref}, _From, State) ->
     {Reply, NewState} = handle_return_finger_ref(State),
     {reply, Reply, NewState};
 
+handle_call({registered_name}, _From, State) ->
+    Reply = registered_name(),
+    {reply, Reply, State};
+
 handle_call(_Request, _From, State) ->
     Reply = invalid,
     {reply, Reply, State}.
@@ -253,7 +255,7 @@ handle_join(Finger, State) ->
             NewState     = State#srv_state{predecessor=undefined,fingers=NewFingers},
             {ok, NewState};
         _Err ->
-            ?TRACE("bad response", Response),
+            ?NTRACE("bad response", Response),
             {uhh, State} % todo
     end.
 
@@ -273,8 +275,17 @@ handle_find_successor(Id, State) ->
                 true  -> 
                    {{ok, SuccessorFinger}, State};
                 false -> % find recursively
-                   {ok, Finger} = closest_preceding_node(Id),
-                   chordjerl_com:send(Finger, {find_successor, Id})
+                   {{ok, Finger}, _NewState} = handle_closest_preceding_node(Id, State), %% hmm, this feels wrong
+                    %% below *should* send find_successor to self and then that  would return
+                    %% self and  the stack should unwind.   however the :send commnd  seems to
+                    %% not like that  very much b/c we are in  the middle of handling a 
+                    %% gen_server request (?)
+                   case Finger#finger.pid == self() of                      
+                     true ->
+                        {{ok, Finger}, State};
+                     false ->
+                        chordjerl_com:send(Finger, {find_successor, Id})
+                   end
             end
     end.
 
@@ -319,10 +330,43 @@ handle_return_finger_ref(State) ->
 %% Description: returns the immediate successor of this node. 
 %%--------------------------------------------------------------------
 successor(State) when length(State#srv_state.fingers) >= 1 ->
-  hd(State#srv_state.fingers);
+    hd(State#srv_state.fingers);
 successor(State) -> % if no successors then return self as finger
-  make_finger_from_self(State).
+    make_finger_from_self(State).
 
 make_finger_from_self(State) ->
-  #finger{sha=State#srv_state.sha, node=node(), pid=self()}.
+    #finger{sha=State#srv_state.sha, node=node(), pid=self()}.
+
+%%-----------------------------------------------------------------------------
+%% Function: registered_name(State) -> {ok, Name} | false
+%% Description: returns the registered name of this process or false if the
+%% process is not registered.  %% This should only be used in debugging or in
+%% tests.
+%% It is used, if available, for consistent hashing of the nodes which, in turn,
+%% makes them testable.
+%%-----------------------------------------------------------------------------
+registered_name() ->
+    case lists:keysearch(registered_name, 1, process_info(self())) of
+        {value, {registered_name, Name}} ->
+            Name;
+        _ ->
+            false
+    end.
+
+make_sha([]) ->
+    % use the registered name if we have one. This helps ensure consistent
+    % hashing while testing. However, we may want to switch this up for
+    % production.
+    Scope = case registered_name() of
+        false ->
+            pid_to_list(self());
+        Name -> 
+            atom_to_list(Name)
+    end,
+    %Scope = pid_to_list(self()),
+            
+    IdString = atom_to_list(node()) ++ Scope,  % not sure about this
+    Sha = sha1:hexstring(IdString), 
+    ShaInt = ch_id_utils:hex_to_int(Sha).       % for now, just store the finger as an int
+
 
