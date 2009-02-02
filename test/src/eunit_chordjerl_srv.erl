@@ -55,17 +55,18 @@ node_network_functional_test_() ->
          Node1   = gen_server:call(testnode1, {return_finger_ref}),
          ?assert(is_record(Node1, finger) == true),
          State1  = gen_server:call(testnode1, {return_state}),
-         %?NTRACE("state1 is:", [State1]),
+         % ?NTRACE("state1 is:", [State1]),
          Finger1 = gen_server:call(testnode1, {immediate_successor}),
          ?assertEqual(State1#srv_state.sha, Finger1#finger.sha), % Node1 successor should be itself
 
          % join the second node to the first 
          ok     = gen_server:call(testnode2, {join, Node1}),
          State2 = gen_server:call(testnode2, {return_state}),
-         %?NTRACE("state2 is:", [State2]),
+         % ?NTRACE("state2 is:", [State2]),
 
          % verify fingers
-         {srv_state, Fingers, _Predecessor, _Backing, _Sha1} = State2,
+         % {srv_state, Fingers, _Predecessor, _Backing, _Sha1} = State2,
+         Fingers = State2#srv_state.fingers,
          ?assertEqual(1, length(Fingers)),
          Finger2 = hd(Fingers),
          Sha2 = Finger2#finger.sha,
@@ -85,6 +86,7 @@ node_network_functional_test_() ->
          ?assertEqual(State2#srv_state.sha, Sha3), % first finger should now be Node2 sha
 
          % ---
+
          % {ok, Successor1} = gen_server:call(testnode1, {find_successor, State1#srv_state.sha}),
          %Response = gen_server:call(testnode1, {find_successor, State1#srv_state.sha}),
          %?NTRACE("testnode1 find successor", [Response]),
@@ -93,7 +95,7 @@ node_network_functional_test_() ->
          %Response = gen_server:call(testnode2, {find_successor, State2#srv_state.sha}),
          %?NTRACE("testnode2 find successor", [Response]),
 
-         %%%  
+         %
 
          %?NTRACE("testnode2 find successor", [Successor2]),
 

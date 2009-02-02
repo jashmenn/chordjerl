@@ -142,7 +142,7 @@ get_finger_ref() ->
 %%--------------------------------------------------------------------
 init([]) ->
     ShaInt = make_sha([]),
-    {ok, #srv_state{sha=ShaInt}}.
+    {ok, #srv_state{sha=ShaInt,pid=self()}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
