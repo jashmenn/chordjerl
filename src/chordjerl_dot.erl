@@ -31,11 +31,10 @@ collect_nodes(Pid, Acc) ->
             collect_nodes(Pid, [State1|Acc])
     end.
 
-
 create_dot_from_nodes(Nodes) -> 
     G = "digraph messenger {\n" ++
         "fontname = \"Bitstream Vera Sans\"\nfontsize = 9\n" ++
-        "node [ fontname = \"Bitstream Vera Sans\"\n fontsize = 9\n shape = \"ellipse\"\n ]",
+        "node [ fontname = \"Bitstream Vera Sans\"\n fontsize = 9\n shape = \"ellipse\"\n ]\n",
     G1 = G ++ lists:map(fun(Node) -> markup_for_node(Node) end, Nodes),
     G2 = G1 ++ "}\n",
     G2.
