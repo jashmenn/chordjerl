@@ -21,7 +21,7 @@ generate_diagram_test_() ->
       setup, fun setup/0,
       fun () ->
          Response = chordjerl_dot:generate_server_graph(testnode3),
-         {ok, FileId} = file:open("server.dot", [read, write]),
+         {ok, FileId} = file:open("server.dot", [write]),
          io:fwrite(FileId, "~s~n", [Response]),
          file:close(FileId),
          {ok}
