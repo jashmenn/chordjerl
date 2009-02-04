@@ -22,6 +22,7 @@
          claim_to_be_predecessor/1,
          fix_fingers/0,
          check_predecessor/0,
+         return_predecessor/0,
          state/0
          ]).
 
@@ -98,7 +99,8 @@ stabilize() ->
 
 %%--------------------------------------------------------------------
 %% Function: claim_to_be_predecessor(Node) -> 
-%% Description: Node thinks it might be our predecessor
+%% Description: Node thinks it might be our predecessor. (Listed as 'notify' in
+%% Chord paper)
 %%--------------------------------------------------------------------
 claim_to_be_predecessor(Node) ->
     gen_server:call(?SERVER, {claim_to_be_predecessor, Node}).
@@ -118,6 +120,13 @@ fix_fingers() ->
 %%--------------------------------------------------------------------
 check_predecessor() ->
     gen_server:call(?SERVER, {check_predecessor}).
+
+%%--------------------------------------------------------------------
+%% Function: return_predecessor() -> {finger, Finger} | false
+%% Description: returns the predecessor of this node
+%%--------------------------------------------------------------------
+return_predecessor() ->
+    gen_server:call(?SERVER, {return_predecessor}).
 
 state() ->
     gen_server:call(?SERVER, {return_state}).
@@ -191,6 +200,10 @@ handle_call({check_predecessor}, _From, State) ->
 
 handle_call({return_state}, _From, State) ->
     Reply = State,
+    {reply, Reply, State};
+
+handle_call({return_predecessor}, _From, State) ->
+    Reply = handle_return_predecessor(State),
     {reply, Reply, State};
 
 handle_call({return_finger_ref}, _From, State) ->
@@ -306,10 +319,30 @@ handle_closest_preceding_node(Id, State, [Finger|T]) ->
 handle_closest_preceding_node(Id, State, []) ->
     {{ok, make_finger_from_self(State)}, State}.
 
+
+%%--------------------------------------------------------------------
+%% Function: handle_stabilize(State) -> 
+%% Description: called periodically. veriﬁes immediate successor, and tells the
+%%              successor about this node. 
+%%--------------------------------------------------------------------
 handle_stabilize(State) ->
+    % x = successor.predecessor; 
+    % if (x ∈ (n, successor)) 
+    % successor = x; 
+    % successor.claim_to_be_predecessor(n); 
     {todo}.
 
+handle_return_predecessor(State) ->
+    case is_record(State#srv_state.predecessor, finger) of
+        true -> 
+            {finger, State#srv_state.predecessor};
+        false -> 
+            false
+    end.
+
 handle_claim_to_be_predecessor(Node, State) -> 
+    % if (predecessor is nil or n′ ∈ (predecessor, n))
+    % predecessor = n′ ; 
     {todo}.
 
 handle_fix_fingers(State) ->
@@ -363,8 +396,7 @@ make_sha([]) ->
         Name -> 
             atom_to_list(Name)
     end,
-    %Scope = pid_to_list(self()),
-            
+
     IdString = atom_to_list(node()) ++ Scope,  % not sure about this
     Sha = sha1:hexstring(IdString), 
     ShaInt = ch_id_utils:hex_to_int(Sha).       % for now, just store the finger as an int

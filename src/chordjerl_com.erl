@@ -20,5 +20,5 @@
 %%--------------------------------------------------------------------
 send(Finger, Message) ->
     % rpc:call on a node doesn't work in testing because these are all the same
-    % node, just different pids. just using gen_server:call till talk is ready
+    % node, just different pids. just using gen_server:call till 'converse' is ready
     gen_server:call(Finger#finger.pid, Message).
