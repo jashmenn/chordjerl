@@ -151,7 +151,7 @@ get_finger_ref() ->
 %%--------------------------------------------------------------------
 init([]) ->
     ShaInt = make_sha([]),
-    {ok, #srv_state{sha=ShaInt,pid=self()}}.
+    {ok, #srv_state{sha=ShaInt,pid=self(),predecessor=undefined}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -322,15 +322,23 @@ handle_closest_preceding_node(Id, State, []) ->
 
 %%--------------------------------------------------------------------
 %% Function: handle_stabilize(State) -> 
-%% Description: called periodically. veriﬁes immediate successor, and tells the
+%% Description: called periodically. verifies immediate successor, and tells the
 %%              successor about this node. 
 %%--------------------------------------------------------------------
 handle_stabilize(State) ->
-    % x = successor.predecessor; 
-    % if (x ∈ (n, successor)) 
-    % successor = x; 
-    % successor.claim_to_be_predecessor(n); 
-    {todo}.
+    Successor = handle_immediate_successor(State), 
+    SuccPred = chordjerl_com:send(Successor, {return_predecessor}),
+    RealSuccessor = case ch_id_utils:id_in_segment(State#srv_state.sha, 
+                                                   Successor#finger.sha, 
+                                                   SuccPred#finger.sha) of
+        true  -> 
+            SuccPred   
+        false -> 
+            Successor
+    end,
+
+    SelfAsFinger = handle_return_finger_ref(State),
+    chordjerl_com:send(RealSuccessor, {claim_to_be_predecessor, SelfAsFinger}).
 
 handle_return_predecessor(State) ->
     case is_record(State#srv_state.predecessor, finger) of
@@ -341,6 +349,10 @@ handle_return_predecessor(State) ->
     end.
 
 handle_claim_to_be_predecessor(Node, State) -> 
+    %Predecessor = handle_return_predecessor(State),
+    %case Predecessor of 
+        %undefined -> 
+           
     % if (predecessor is nil or n′ ∈ (predecessor, n))
     % predecessor = n′ ; 
     {todo}.
