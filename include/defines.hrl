@@ -6,17 +6,23 @@
 -define (RECONNECT_TIMEOUT, 10000).
 -define (NBIT, 160). % number of bits in the hash function
 
+% may merge finger-like attributes into the srv state. Maybe
+% srv_state.finger_of_self?
 -record(srv_state, {
     fingers = [],
     predecessor,
     backing_store = simple_kv_backing_store,
     sha,
-    pid 
+    pid,
+    ip,
+    port
   }).
 
 -record(finger, {
     sha,
     node,
-    pid
+    pid,
+    ip,
+    port
   }).
 
