@@ -326,26 +326,40 @@ handle_closest_preceding_node(Id, State, []) ->
 %%              successor about this node. 
 %%--------------------------------------------------------------------
 handle_stabilize(State) ->
-    Successor = handle_immediate_successor(State), 
+    {Successor, _State} = handle_immediate_successor(State), 
+    case Successor#finger.sha =:= State#srv_state.sha of
+        true ->
+            {ok, State}; % don't do anything
+        false ->
+            handle_stabilize(State, Successor)
+    end.
+
+handle_stabilize(State, Successor) ->
     SuccPred = chordjerl_com:send(Successor, {return_predecessor}),
-    RealSuccessor = case ch_id_utils:id_in_segment(State#srv_state.sha, 
-                                                   Successor#finger.sha, 
-                                                   SuccPred#finger.sha) of
-        true  -> 
-            SuccPred;
-        false -> 
+    RealSuccessor = case is_record(SuccPred, finger) of
+        true -> 
+            case ch_id_utils:id_in_segment(State#srv_state.sha, 
+                                           Successor#finger.sha, 
+                                           SuccPred#finger.sha) of
+                true  -> 
+                    SuccPred;
+                false -> 
+                    Successor
+            end;
+        false -> % if Successor has no predecessor, then just notify Seccessor
             Successor
     end,
 
     SelfAsFinger = handle_return_finger_ref(State),
-    chordjerl_com:send(RealSuccessor, {claim_to_be_predecessor, SelfAsFinger}).
+    Response = chordjerl_com:send(RealSuccessor, {claim_to_be_predecessor, SelfAsFinger}),
+    {Response, State}.
 
 handle_return_predecessor(State) ->
     case is_record(State#srv_state.predecessor, finger) of
         true -> 
             {finger, State#srv_state.predecessor};
         false -> 
-            false
+            undefined
     end.
 
 handle_claim_to_be_predecessor(Node, State) -> 

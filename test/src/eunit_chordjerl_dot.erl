@@ -20,6 +20,7 @@ generate_diagram_test_() ->
   {
       setup, fun setup/0,
       fun () ->
+         gen_server:call(testnode3, {stabilize}),
          Response = chordjerl_dot:generate_server_graph(testnode3),
          {ok, FileId} = file:open("server.dot", [write]),
          io:fwrite(FileId, "~s~n", [Response]),
