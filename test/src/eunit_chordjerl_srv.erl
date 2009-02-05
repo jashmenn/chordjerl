@@ -14,7 +14,7 @@ tracking_nodes_test_() ->
       fun () ->
          ?MOD:create_ring(),
          State = ?MOD:state(),
-         ?assert(is_record(State, srv_state) == true),
+         ?assert(is_record(State, srv_state) =:= true),
          ?assertEqual([], State#srv_state.fingers),
          ?assertEqual(simple_kv_backing_store, State#srv_state.backing_store),
          {ok}
@@ -39,7 +39,7 @@ node_state_test_() ->
       setup, fun setup2/0,
       fun () ->
          State1 = gen_server:call(testnode1, {return_state}),
-         ?assert(is_record(State1, srv_state) == true),
+         ?assert(is_record(State1, srv_state) =:= true),
          {ok}
       end
   }.
@@ -53,7 +53,7 @@ node_network_functional_test_() ->
       setup, fun setup2/0,
       fun () ->
          Node1   = gen_server:call(testnode1, {return_finger_ref}),
-         ?assert(is_record(Node1, finger) == true),
+         ?assert(is_record(Node1, finger) =:= true),
          State1  = gen_server:call(testnode1, {return_state}),
          % ?NTRACE("state1 is:", [State1]),
          Finger1 = gen_server:call(testnode1, {immediate_successor}),
@@ -103,7 +103,7 @@ successor_from_state_test_() ->
       fun () ->
          ?MOD:create_ring(),
          State = ?MOD:state(),
-         ?assert(is_record(chordjerl_srv:successor(State), finger) == true),
+         ?assert(is_record(chordjerl_srv:successor(State), finger) =:= true),
          % ?assertEqual({ok, Finger}, chordjerl_srv:successor(State)), % when you get a successor
          {ok}
       end.

@@ -280,7 +280,7 @@ handle_join(Finger, State) ->
 handle_find_successor(Id, State) ->
     SuccessorFinger = successor(State),
     SuccessorId = SuccessorFinger#finger.sha,
-    case State#srv_state.sha == SuccessorId of
+    case State#srv_state.sha =:= SuccessorId of
         true ->
             {{ok, SuccessorFinger}, State}; % if successor is self, return self
         false ->
@@ -293,7 +293,7 @@ handle_find_successor(Id, State) ->
                     %% self and  the stack should unwind.   however the :send commnd  seems to
                     %% not like that  very much b/c we are in  the middle of handling a 
                     %% gen_server request (?)
-                   case Finger#finger.pid == self() of                      
+                   case Finger#finger.pid =:= self() of                      
                      true ->
                         {{ok, Finger}, State};
                      false ->
@@ -332,7 +332,7 @@ handle_stabilize(State) ->
                                                    Successor#finger.sha, 
                                                    SuccPred#finger.sha) of
         true  -> 
-            SuccPred   
+            SuccPred;
         false -> 
             Successor
     end,
@@ -349,13 +349,27 @@ handle_return_predecessor(State) ->
     end.
 
 handle_claim_to_be_predecessor(Node, State) -> 
-    %Predecessor = handle_return_predecessor(State),
-    %case Predecessor of 
-        %undefined -> 
-           
-    % if (predecessor is nil or n′ ∈ (predecessor, n))
-    % predecessor = n′ ; 
-    {todo}.
+    Predecessor = handle_return_predecessor(State),
+    if
+        undefined =:= Predecessor -> 
+            handle_set_new_predecessor(Node, State);
+        is_record(Predecessor, finger) ->
+            % is Node between our current Predecessor and us?
+            case ch_id_utils:id_in_segment( Predecessor#finger.sha,
+                                            State#srv_state.sha, 
+                                            Node#finger.sha) of
+               true ->
+                    handle_set_new_predecessor(Node, State);
+               false ->
+                    {nochange, State}
+            end;
+        true ->
+          {nochange, State}
+    end.
+
+handle_set_new_predecessor(Node, State) ->
+    NewState = State#srv_state{predecessor=Node},
+    {ok, NewState}.
 
 handle_fix_fingers(State) ->
     {todo}.
