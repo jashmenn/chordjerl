@@ -27,11 +27,16 @@ generate_diagram_test_() ->
          gen_server:call(testnode3, {stabilize}),
          gen_server:call(testnode2, {stabilize}),
          gen_server:call(testnode1, {stabilize}),
-         io:format(user, "stabilizing again~n", []),
-         gen_server:call(testnode3, {stabilize}),
-         gen_server:call(testnode2, {stabilize}),
-         gen_server:call(testnode1, {stabilize}),
+
+         %io:format(user, "stabilizing again~n", []),
+         %gen_server:call(testnode3, {stabilize}),
+         %gen_server:call(testnode2, {stabilize}),
+         %gen_server:call(testnode1, {stabilize}),
  
+         % connections missing:
+         % * node3's predecessor should be node1.
+         % * node1's successor should be node3
+         % * node1's predecessor should be node2
 
          io:format(user, "node1 ~p~n", [gen_server:call(testnode1, {return_state})]),
          io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),

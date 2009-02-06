@@ -355,16 +355,14 @@ handle_stabilize(State, Successor) ->
                     {ok, NewState1} = handle_set_immediate_successor(SuccPred, State),
                     {SuccPred, NewState1};
                 false -> 
-                    ?NTRACE("id is not in segement", Successor),
+                    %?NTRACE("id is not in segement", Successor),
                     {Successor, State}
             end;
         false -> % if Successor has no predecessor, then just notify Seccessor
-            ?NTRACE("successor has no predecessor", Successor),
+            % ?NTRACE("successor has no predecessor", Successor),
             {Successor, State}
     end,
 
-    %% -- missing
-    
     {SelfAsFinger, _State} = handle_return_finger_ref(State),
     Response = chordjerl_com:send(RealSuccessor, {claim_to_be_predecessor, SelfAsFinger}),
     {Response, NewState}.
@@ -378,11 +376,11 @@ handle_return_predecessor(State) ->
     end.
 
 handle_claim_to_be_predecessor(Node, State) when is_record(Node, finger) -> 
-    ?NTRACE("rec'd claim of predecessor from", Node#finger.pid),
+    %?NTRACE("rec'd claim of predecessor from", Node#finger.pid),
     Predecessor = handle_return_predecessor(State),
     {Response, NewState} = if
         undefined =:= Predecessor -> 
-           ?NTRACE("pred was undefined", []),
+           %?NTRACE("pred was undefined", []),
             handle_set_new_predecessor(Node, State);
         is_record(Predecessor, finger) ->
             % is Node between our current Predecessor and us?
@@ -400,7 +398,7 @@ handle_claim_to_be_predecessor(Node, State) when is_record(Node, finger) ->
     {Response, NewState}.
 
 handle_set_new_predecessor(Node, State) ->
-    io:format(user, "setting new predecessor for ~p ~p to ~p~n", [State#srv_state.sha, State#srv_state.pid, Node#finger.sha]),
+    io:format(user, "setting new predecessor for ~p ~p to ~p ~p~n", [State#srv_state.sha, State#srv_state.pid, Node#finger.sha, Node#finger.pid]),
     NewState = State#srv_state{predecessor=Node},
     {ok, NewState}.
 
@@ -418,7 +416,9 @@ handle_return_finger_ref(State) ->
 %% Description: 
 %%-----------------------------------------------------------------------------
 handle_set_immediate_successor(NewSuccessor, State) ->
-    {ok, State}.
+    io:format(user, "setting new successor for ~p ~p to ~p ~p~n", [State#srv_state.sha, State#srv_state.pid, NewSuccessor#finger.sha, NewSuccessor#finger.pid]),
+    NewState = State#srv_state{fingers=[NewSuccessor|State#srv_state.fingers]},
+    {ok, NewState}.
 
 %%--------------------------------------------------------------------
 %%% Internal functions

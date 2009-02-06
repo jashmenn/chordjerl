@@ -40,9 +40,15 @@ create_dot_from_nodes(Nodes) ->
     G2.
 
 markup_for_node(Node) ->
-    O  = io_lib:format("~p [label=\"~p\"]~n", [Node#srv_state.sha, gen_server:call(Node#srv_state.pid, {registered_name})]),
-    O1 = O ++ lists:map(fun(Finger) -> markup_for_connection(Node, Finger) end, Node#srv_state.fingers),
-    O1.
+    O  = io_lib:format("~p [label=\"~p\\n~p\"]~n", [Node#srv_state.sha, gen_server:call(Node#srv_state.pid, {registered_name}), Node#srv_state.pid]),
+    O1 = O  ++ lists:map(fun(Finger) -> markup_for_connection(Node, Finger) end, Node#srv_state.fingers),
+    O2 = O1 ++ markup_for_predecessor(Node, Node#srv_state.predecessor) ,
+    O2.
 
 markup_for_connection(Node, Finger) ->
     io_lib:format("~p -> ~p~n", [Node#srv_state.sha, Finger#finger.sha]).
+
+markup_for_predecessor(Node, undefined) ->
+    [];
+markup_for_predecessor(Node, Finger) ->
+    io_lib:format("~p -> ~p [style=dashed]~n", [Node#srv_state.sha, Finger#finger.sha]).
