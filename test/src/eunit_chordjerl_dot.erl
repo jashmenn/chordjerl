@@ -20,7 +20,24 @@ generate_diagram_test_() ->
   {
       setup, fun setup/0,
       fun () ->
+         io:format(user, "node1 ~p~n", [gen_server:call(testnode1, {return_state})]),
+         io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),
+         io:format(user, "node3 ~p~n", [gen_server:call(testnode3, {return_state})]),
+
          gen_server:call(testnode3, {stabilize}),
+         gen_server:call(testnode2, {stabilize}),
+         gen_server:call(testnode1, {stabilize}),
+         io:format(user, "stabilizing again~n", []),
+         gen_server:call(testnode3, {stabilize}),
+         gen_server:call(testnode2, {stabilize}),
+         gen_server:call(testnode1, {stabilize}),
+ 
+
+         io:format(user, "node1 ~p~n", [gen_server:call(testnode1, {return_state})]),
+         io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),
+         io:format(user, "node3 ~p~n", [gen_server:call(testnode3, {return_state})]),
+ 
+ 
          Response = chordjerl_dot:generate_server_graph(testnode3),
          {ok, FileId} = file:open("server.dot", [write]),
          io:fwrite(FileId, "~s~n", [Response]),

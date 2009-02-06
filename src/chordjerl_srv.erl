@@ -187,7 +187,10 @@ handle_call({stabilize}, _From, State) ->
     {reply, Reply, NewState};
 
 handle_call({claim_to_be_predecessor, Node}, _From, State) ->
-    {Reply, NewState} = handle_claim_to_be_predecessor(Node, State),
+    %{Reply, NewState} = handle_claim_to_be_predecessor(Node, State),
+    Rep = handle_claim_to_be_predecessor(Node, State),
+    io:format(user, "claim to be pre was: ~p~n", [Rep]),
+    {Reply, NewState} = Rep,
     {reply, Reply, NewState};
 
 handle_call({fix_fingers}, _From, State) ->
@@ -329,30 +332,42 @@ handle_stabilize(State) ->
     {Successor, _State} = handle_immediate_successor(State), 
     case Successor#finger.sha =:= State#srv_state.sha of
         true ->
-            {ok, State}; % don't do anything
+            {ok, State}; % our sucessor is ourself, don't do anything
         false ->
             handle_stabilize(State, Successor)
     end.
 
+%%--------------------------------------------------------------------
+%% Function: handle_stabilize(State, Successor) -> 
+%% Arguments: Successor must not be self as a finger 
+%%--------------------------------------------------------------------
 handle_stabilize(State, Successor) ->
     SuccPred = chordjerl_com:send(Successor, {return_predecessor}),
-    RealSuccessor = case is_record(SuccPred, finger) of
+    {RealSuccessor, NewState} = case is_record(SuccPred, finger) of
         true -> 
             case ch_id_utils:id_in_segment(State#srv_state.sha, 
                                            Successor#finger.sha, 
                                            SuccPred#finger.sha) of
                 true  -> 
-                    SuccPred;
+                    % we need to say that SuccPred is our real Successor
+                    % this is a State changing operation, not just a notifying of SuccPred
+                    ?NTRACE("setting a new successor", SuccPred),
+                    {ok, NewState1} = handle_set_immediate_successor(SuccPred, State),
+                    {SuccPred, NewState1};
                 false -> 
-                    Successor
+                    ?NTRACE("id is not in segement", Successor),
+                    {Successor, State}
             end;
         false -> % if Successor has no predecessor, then just notify Seccessor
-            Successor
+            ?NTRACE("successor has no predecessor", Successor),
+            {Successor, State}
     end,
 
-    SelfAsFinger = handle_return_finger_ref(State),
+    %% -- missing
+    
+    {SelfAsFinger, _State} = handle_return_finger_ref(State),
     Response = chordjerl_com:send(RealSuccessor, {claim_to_be_predecessor, SelfAsFinger}),
-    {Response, State}.
+    {Response, NewState}.
 
 handle_return_predecessor(State) ->
     case is_record(State#srv_state.predecessor, finger) of
@@ -362,10 +377,12 @@ handle_return_predecessor(State) ->
             undefined
     end.
 
-handle_claim_to_be_predecessor(Node, State) -> 
+handle_claim_to_be_predecessor(Node, State) when is_record(Node, finger) -> 
+    ?NTRACE("rec'd claim of predecessor from", Node#finger.pid),
     Predecessor = handle_return_predecessor(State),
-    if
+    {Response, NewState} = if
         undefined =:= Predecessor -> 
+           ?NTRACE("pred was undefined", []),
             handle_set_new_predecessor(Node, State);
         is_record(Predecessor, finger) ->
             % is Node between our current Predecessor and us?
@@ -379,9 +396,11 @@ handle_claim_to_be_predecessor(Node, State) ->
             end;
         true ->
           {nochange, State}
-    end.
+    end,
+    {Response, NewState}.
 
 handle_set_new_predecessor(Node, State) ->
+    io:format(user, "setting new predecessor for ~p ~p to ~p~n", [State#srv_state.sha, State#srv_state.pid, Node#finger.sha]),
     NewState = State#srv_state{predecessor=Node},
     {ok, NewState}.
 
@@ -393,6 +412,13 @@ handle_check_predecessor(State) ->
 
 handle_return_finger_ref(State) ->
     {make_finger_from_self(State), State}.
+
+%%-----------------------------------------------------------------------------
+%% Function: 
+%% Description: 
+%%-----------------------------------------------------------------------------
+handle_set_immediate_successor(NewSuccessor, State) ->
+    {ok, State}.
 
 %%--------------------------------------------------------------------
 %%% Internal functions
