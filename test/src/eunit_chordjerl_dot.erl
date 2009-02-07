@@ -25,9 +25,9 @@ generate_diagram_test_() ->
          io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),
          io:format(user, "node3 ~p~n", [gen_server:call(testnode3, {return_state})]),
 
-         %gen_server:call(testnode3, {stabilize}),
-         %gen_server:call(testnode2, {stabilize}),
-         %gen_server:call(testnode1, {stabilize}),
+         gen_server:call(testnode3, {stabilize}),
+         gen_server:call(testnode2, {stabilize}),
+         gen_server:call(testnode1, {stabilize}),
 
          %io:format(user, "stabilizing again~n", []),
          %gen_server:call(testnode3, {stabilize}),
@@ -50,17 +50,7 @@ generate_diagram_test_() ->
  
          % Response = chordjerl_dot:generate_server_graph(testnode1),
          Response = chordjerl_dot:generate_server_graph(testnode3),
-
-         % !!!! node2's finger is missing
-
-         % starting at node 1:
-         %1> 1293643317455874760360820462885806773918877262299 -> 695350099334024227710091817417021231389479344272
-         %1> 695350099334024227710091817417021231389479344272 -> 1293643317455874760360820462885806773918877262299
-
-         % starting at node 3:
-         %1> 1293643317455874760360820462885806773918877262299 -> 695350099334024227710091817417021231389479344272
-         %1> 689017247116779115750422726201224284066879508356 -> 1293643317455874760360820462885806773918877262299
-         
+        
          {ok, FileId} = file:open("server.dot", [write]),
          io:fwrite(FileId, "~s~n", [Response]),
          file:close(FileId),

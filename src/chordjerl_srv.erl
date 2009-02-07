@@ -187,10 +187,10 @@ handle_call({stabilize}, _From, State) ->
     {reply, Reply, NewState};
 
 handle_call({claim_to_be_predecessor, Node}, _From, State) ->
-    %{Reply, NewState} = handle_claim_to_be_predecessor(Node, State),
-    Rep = handle_claim_to_be_predecessor(Node, State),
-    io:format(user, "claim to be pre was: ~p~n", [Rep]),
-    {Reply, NewState} = Rep,
+    {Reply, NewState} = handle_claim_to_be_predecessor(Node, State),
+    %Rep = handle_claim_to_be_predecessor(Node, State),
+    %io:format(user, "claim to be pre was: ~p~n", [Rep]),
+    %{Reply, NewState} = Rep,
     {reply, Reply, NewState};
 
 handle_call({fix_fingers}, _From, State) ->
@@ -362,7 +362,7 @@ handle_stabilize(State, Successor) ->
                 true  -> 
                     % we need to say that SuccPred is our real Successor
                     % this is a State changing operation, not just a notifying of SuccPred
-                    ?NTRACE("setting a new successor", SuccPred),
+                    % ?NTRACE("setting a new successor", SuccPred),
                     {ok, NewState1} = handle_set_immediate_successor(SuccPred, State),
                     {SuccPred, NewState1};
                 false -> 
@@ -409,7 +409,7 @@ handle_claim_to_be_predecessor(Node, State) when is_record(Node, finger) ->
     {Response, NewState}.
 
 handle_set_new_predecessor(Node, State) ->
-    io:format(user, "setting new predecessor for ~p ~p to ~p ~p~n", [State#srv_state.sha, State#srv_state.pid, Node#finger.sha, Node#finger.pid]),
+    % io:format(user, "setting new predecessor for ~p ~p to ~p ~p~n", [State#srv_state.sha, State#srv_state.pid, Node#finger.sha, Node#finger.pid]),
     NewState = State#srv_state{predecessor=Node},
     {ok, NewState}.
 
@@ -427,7 +427,7 @@ handle_return_finger_ref(State) ->
 %% Description: 
 %%-----------------------------------------------------------------------------
 handle_set_immediate_successor(NewSuccessor, State) ->
-    io:format(user, "setting new successor for ~p ~p to ~p ~p~n", [State#srv_state.sha, State#srv_state.pid, NewSuccessor#finger.sha, NewSuccessor#finger.pid]),
+    % io:format(user, "setting new successor for ~p ~p to ~p ~p~n", [State#srv_state.sha, State#srv_state.pid, NewSuccessor#finger.sha, NewSuccessor#finger.pid]),
     NewState = State#srv_state{fingers=[NewSuccessor|State#srv_state.fingers]},
     {ok, NewState}.
 
