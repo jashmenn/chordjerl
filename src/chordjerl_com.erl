@@ -13,12 +13,15 @@
 %%--------------------------------------------------------------------
 %% Function: send(Finger, Message) -> Res
 %% Description: Sends Finger Message
+%% todo, should be called "call"
 %%
 %%  Types  Finger = finger (record)
 %%         Message = term()
 %%         Res = term()
 %%--------------------------------------------------------------------
-send(Finger, Message) ->
-    % rpc:call on a node doesn't work in testing because these are all the same
-    % node, just different pids. just using gen_server:call till 'converse' is ready
+send(Finger, Message) -> 
+    % just using gen_server:call till 'converse' is ready
     gen_server:call(Finger#finger.pid, Message).
+
+cast(Finger, Message) ->
+    gen_server:cast(Finger#finger.pid, Message).

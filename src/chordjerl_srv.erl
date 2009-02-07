@@ -217,6 +217,10 @@ handle_call({registered_name}, _From, State) ->
     Reply = registered_name(),
     {reply, Reply, State};
 
+handle_call({joined_by, Finger}, _From, State) ->
+    {ok, NewState} = handle_joined_by(Finger, State),
+    {reply, ok, NewState};
+
 handle_call(_Request, _From, State) ->
     Reply = invalid,
     {reply, Reply, State}.
@@ -268,12 +272,23 @@ handle_join(Finger, State) ->
     case Response of
         {ok, NewFinger} -> 
             NewFingers   = [NewFinger|State#srv_state.fingers],
-            NewState     = State#srv_state{predecessor=undefined,fingers=NewFingers},
+            NewState     = State#srv_state{fingers=NewFingers},
+            _Response = chordjerl_com:send(Finger, {joined_by, make_finger_from_self(State)}), % tell the node we joined it
             {ok, NewState};
         _Err ->
             ?NTRACE("bad response", Response),
             {uhh, State} % todo
     end.
+
+% if you were joined by another node but you don't have any successors (for
+% instance, you are the first node in your ring) then add the node that joined
+% you to your successor list
+handle_joined_by(Finger, State) when length(State#srv_state.fingers) =:= 0 ->
+    NewFingers   = [Finger|State#srv_state.fingers],
+    NewState     = State#srv_state{fingers=NewFingers},
+    {ok, NewState};
+handle_joined_by(Finger, State) ->
+    {ok, State}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_find_successor(Id, State) -> {{ok, SuccessorFinger}, NewState}
