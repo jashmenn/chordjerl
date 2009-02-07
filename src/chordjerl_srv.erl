@@ -287,7 +287,7 @@ handle_joined_by(Finger, State) when length(State#srv_state.fingers) =:= 0 ->
     NewFingers   = [Finger|State#srv_state.fingers],
     NewState     = State#srv_state{fingers=NewFingers},
     {ok, NewState};
-handle_joined_by(Finger, State) ->
+handle_joined_by(_Finger, State) ->
     {ok, State}.
 
 %%--------------------------------------------------------------------
@@ -295,7 +295,7 @@ handle_joined_by(Finger, State) ->
 %% Description: find the successor of Id
 %% returns in finger format
 %%--------------------------------------------------------------------
-handle_find_successor(Id, State) ->
+handle_find_successor(Id, State) -> % could use a refactoring...
     SuccessorFinger = successor(State),
     SuccessorId = SuccessorFinger#finger.sha,
     case State#srv_state.sha =:= SuccessorId of
@@ -306,11 +306,7 @@ handle_find_successor(Id, State) ->
                 true  -> 
                    {{ok, SuccessorFinger}, State};
                 false -> % find recursively
-                   {{ok, Finger}, _NewState} = handle_closest_preceding_node(Id, State), %% hmm, this feels wrong
-                    %% below *should* send find_successor to self and then that  would return
-                    %% self and  the stack should unwind.   however the :send commnd  seems to
-                    %% not like that  very much b/c we are in  the middle of handling a 
-                    %% gen_server request (?)
+                   {{ok, Finger}, _NewState} = handle_closest_preceding_node(Id, State),
                    case Finger#finger.pid =:= self() of                      
                      true ->
                         {{ok, Finger}, State};
@@ -334,7 +330,7 @@ handle_closest_preceding_node(Id, State, [Finger|T]) ->
         false -> 
            handle_closest_preceding_node(Id, State, T) 
     end;
-handle_closest_preceding_node(Id, State, []) ->
+handle_closest_preceding_node(_Id, State, []) ->
     {{ok, make_finger_from_self(State)}, State}.
 
 
@@ -417,10 +413,10 @@ handle_set_new_predecessor(Node, State) ->
     NewState = State#srv_state{predecessor=Node},
     {ok, NewState}.
 
-handle_fix_fingers(State) ->
+handle_fix_fingers(_State) ->
     {todo}.
 
-handle_check_predecessor(State) ->
+handle_check_predecessor(_State) ->
     {todo}.
 
 handle_return_finger_ref(State) ->
@@ -480,6 +476,4 @@ make_sha([]) ->
 
     IdString = atom_to_list(node()) ++ Scope,  % not sure about this
     Sha = sha1:hexstring(IdString), 
-    ShaInt = ch_id_utils:hex_to_int(Sha).       % for now, just store the finger as an int
-
-
+    ch_id_utils:hex_to_int(Sha).               % for now, just store the finger as an int
