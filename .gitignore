@@ -3,3 +3,5 @@ ebin
 *.beam
 .DS_Store
 session
+server.dot
+server.png
