@@ -151,7 +151,7 @@ get_finger_ref() ->
 %%--------------------------------------------------------------------
 init([]) ->
     ShaInt = make_sha([]),
-    {ok, #srv_state{sha=ShaInt,pid=self(),predecessor=undefined}}.
+    {ok, #srv_state{sha=ShaInt,pid=self(),predecessor=undefined,next=-1}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -412,10 +412,18 @@ handle_set_new_predecessor(Node, State) ->
 %     next = next + 1; 
 %     if (next > m) 
 %       next = 1; 
-%     finger[next] = find successor(n + 2^(next-1)); 
-handle_fix_fingers(_State) ->
-   % Next
-    {todo}.
+%     finger[next] = find_successor(n + 2^(next-1)); 
+% 
+handle_fix_fingers(State) when State#srv_state.next > ?NBIT ->
+    Next = 0
+    handle_fix_fingers(State, Next);
+handle_fix_fingers(State) ->
+    Next = State#srv_state.next + 1,
+    handle_fix_fingers(State, Next).
+
+handle_fix_fingers(State, Next) ->
+%   finger[next] = find_successor(n + 2^(next-1)); 
+    {ok, State#srv_state{next=Next}}.
 
 handle_check_predecessor(_State) ->
     {todo}.

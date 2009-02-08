@@ -15,7 +15,8 @@
     sha,
     pid,
     ip,
-    port
+    port,
+    next % the index of the next finger to fix
   }).
 
 -record(finger, {
