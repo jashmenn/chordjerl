@@ -43,24 +43,7 @@ collect_all_fingers(Node, D) ->
            end
        end,
        D0, Fingers),
-
    D1.
-
-collect_nodes(Pid) ->
-    Node = gen_server:call(Pid, {return_state}),
-    collect_nodes(Pid, [Node]).
-
-collect_nodes(Pid, Acc) ->
-    Finger1 = gen_server:call(Pid, {immediate_successor}),
-    State1  = gen_server:call(Finger1#finger.pid, {return_state}),
-
-    Matching = fun(Elem) -> (Elem#srv_state.sha == State1#srv_state.sha) end,
-    case lists:any(Matching, Acc) of
-        true -> % terminates when his a duplicate node. could probably be improved
-            Acc;
-        false ->
-            collect_nodes(Pid, [State1|Acc])
-    end.
 
 create_dot_from_nodes(Nodes) -> 
     G = "digraph messenger {\n" ++
@@ -71,13 +54,15 @@ create_dot_from_nodes(Nodes) ->
     G2.
 
 markup_for_node(Node) ->
-    O  = io_lib:format("~p [label=\"~p\\n~p\"]~n", [Node#srv_state.sha, gen_server:call(Node#srv_state.pid, {registered_name}), Node#srv_state.pid]),
+    O  = io_lib:format("~p [label=\"~p\\n~p\"]~n", 
+            [Node#srv_state.sha, 
+            gen_server:call(Node#srv_state.pid, {registered_name}), 
+                            Node#srv_state.pid]),
     O1 = O  ++ lists:map(fun(Finger) -> markup_for_connection(Node, Finger) end, Node#srv_state.fingers),
     O2 = O1 ++ markup_for_predecessor(Node, Node#srv_state.predecessor) ,
     O2.
 
 markup_for_connection(Node, Finger) ->
-    io:format(user, "~p -> ~p~n", [Node#srv_state.sha, Finger#finger.sha]),
     io_lib:format("~p -> ~p~n", [Node#srv_state.sha, Finger#finger.sha]).
 
 markup_for_predecessor(_Node, undefined) ->

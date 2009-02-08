@@ -188,9 +188,6 @@ handle_call({stabilize}, _From, State) ->
 
 handle_call({claim_to_be_predecessor, Node}, _From, State) ->
     {Reply, NewState} = handle_claim_to_be_predecessor(Node, State),
-    %Rep = handle_claim_to_be_predecessor(Node, State),
-    %io:format(user, "claim to be pre was: ~p~n", [Rep]),
-    %{Reply, NewState} = Rep,
     {reply, Reply, NewState};
 
 handle_call({fix_fingers}, _From, State) ->
@@ -360,17 +357,14 @@ handle_stabilize(State, Successor) ->
                                            Successor#finger.sha, 
                                            SuccPred#finger.sha) of
                 true  -> 
-                    % we need to say that SuccPred is our real Successor
-                    % this is a State changing operation, not just a notifying of SuccPred
-                    % ?NTRACE("setting a new successor", SuccPred),
+                    % SuccPred is our real Successor this is a State changing
+                    % operation, not just a notification of SuccPred
                     {ok, NewState1} = handle_set_immediate_successor(SuccPred, State),
                     {SuccPred, NewState1};
                 false -> 
-                    %?NTRACE("id is not in segement", Successor),
                     {Successor, State}
             end;
         false -> % if Successor has no predecessor, then just notify Seccessor
-            % ?NTRACE("successor has no predecessor", Successor),
             {Successor, State}
     end,
 
@@ -387,11 +381,9 @@ handle_return_predecessor(State) ->
     end.
 
 handle_claim_to_be_predecessor(Node, State) when is_record(Node, finger) -> 
-    %?NTRACE("rec'd claim of predecessor from", Node#finger.pid),
     Predecessor = handle_return_predecessor(State),
     {Response, NewState} = if
         undefined =:= Predecessor -> 
-           %?NTRACE("pred was undefined", []),
             handle_set_new_predecessor(Node, State);
         is_record(Predecessor, finger) ->
             % is Node between our current Predecessor and us?
@@ -409,7 +401,8 @@ handle_claim_to_be_predecessor(Node, State) when is_record(Node, finger) ->
     {Response, NewState}.
 
 handle_set_new_predecessor(Node, State) ->
-    % io:format(user, "setting new predecessor for ~p ~p to ~p ~p~n", [State#srv_state.sha, State#srv_state.pid, Node#finger.sha, Node#finger.pid]),
+    % io:format(user, "setting new predecessor for ~p ~p to ~p ~p~n", 
+    %     [State#srv_state.sha, State#srv_state.pid, Node#finger.sha, Node#finger.pid]),
     NewState = State#srv_state{predecessor=Node},
     {ok, NewState}.
 
@@ -427,7 +420,8 @@ handle_return_finger_ref(State) ->
 %% Description: 
 %%-----------------------------------------------------------------------------
 handle_set_immediate_successor(NewSuccessor, State) ->
-    % io:format(user, "setting new successor for ~p ~p to ~p ~p~n", [State#srv_state.sha, State#srv_state.pid, NewSuccessor#finger.sha, NewSuccessor#finger.pid]),
+    % io:format(user, "setting new successor for ~p ~p to ~p ~p~n", 
+    %      [State#srv_state.sha, State#srv_state.pid, NewSuccessor#finger.sha, NewSuccessor#finger.pid]),
     NewState = State#srv_state{fingers=[NewSuccessor|State#srv_state.fingers]},
     {ok, NewState}.
 
