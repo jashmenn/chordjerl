@@ -21,9 +21,9 @@ generate_diagram_test_() ->
   {
       setup, fun setup/0,
       fun () ->
-         %io:format(user, "node1 ~p~n", [gen_server:call(testnode1, {return_state})]),
-         %io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),
-         %io:format(user, "node3 ~p~n", [gen_server:call(testnode3, {return_state})]),
+         % io:format(user, "node1 ~p~n", [gen_server:call(testnode1, {return_state})]),
+         % io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),
+         % io:format(user, "node3 ~p~n", [gen_server:call(testnode3, {return_state})]),
 
          gen_server:call(testnode3, {stabilize}),
          gen_server:call(testnode2, {stabilize}),

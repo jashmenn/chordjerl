@@ -406,7 +406,15 @@ handle_set_new_predecessor(Node, State) ->
     NewState = State#srv_state{predecessor=Node},
     {ok, NewState}.
 
+% called periodically. refreshes finger table entries. 
+% next stores the index of the next finger to fix. 
+% 
+%     next = next + 1; 
+%     if (next > m) 
+%       next = 1; 
+%     finger[next] = find successor(n + 2^(next-1)); 
 handle_fix_fingers(_State) ->
+   % Next
     {todo}.
 
 handle_check_predecessor(_State) ->
