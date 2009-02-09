@@ -67,3 +67,5 @@ id_in_segment(Start, End, QueryId) ->
 %%--------------------------------------------------------------------
 bbsl(Bin,Shift) -> 
   <<_:Shift,Rest/bits>> = Bin, <<Rest/bits,0:Shift>>.
+
+

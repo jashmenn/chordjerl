@@ -414,16 +414,33 @@ handle_set_new_predecessor(Node, State) ->
 %       next = 1; 
 %     finger[next] = find_successor(n + 2^(next-1)); 
 % 
+handle_fix_fingers(State) when State#srv_state.next =:= 0 ->
+    handle_fix_fingers(State, _Next=1);  % leave successor handling to stabilize
 handle_fix_fingers(State) when State#srv_state.next > ?NBIT ->
-    Next = 0
-    handle_fix_fingers(State, Next);
+    handle_fix_fingers(State, _Next=1);
 handle_fix_fingers(State) ->
     Next = State#srv_state.next + 1,
     handle_fix_fingers(State, Next).
 
+% find the successor for this number
+% if the successor found is the same as Next - 1 then set Next = 1 and be done.
+% this way we dont have to look for all the extras every single time
+% if it isn't set it as fingers[Next]
 handle_fix_fingers(State, Next) ->
-%   finger[next] = find_successor(n + 2^(next-1)); 
-    {ok, State#srv_state{next=Next}}.
+    TargetId =  State#srv_state.sha + math:pow(2, (Next-1)),
+    Successor = handle_find_successor(TargetId, State),
+    Fingers = State#srv_state.fingers,
+    PrevFinger = lists:nth(Next - 1, Fingers),
+
+    case PrevFinger#finger.sha =:= Successor#finger.sha of
+        true ->
+            NewNext = 1,
+            {ok, State#srv_state{next=NewNext}};
+        false ->
+            NewFingers = ch_utils:list_replace_n(Next, Successor, Fingers),
+            {ok, State#srv_state{next=Next,fingers=NewFingers}}
+    end.
+            
 
 handle_check_predecessor(_State) ->
     {todo}.
