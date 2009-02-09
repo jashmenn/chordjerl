@@ -151,7 +151,7 @@ get_finger_ref() ->
 %%--------------------------------------------------------------------
 init([]) ->
     ShaInt = make_sha([]),
-    {ok, #srv_state{sha=ShaInt,pid=self(),predecessor=undefined,next=-1}}.
+    {ok, #srv_state{sha=ShaInt,pid=self(),predecessor=undefined,next=0}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -427,10 +427,10 @@ handle_fix_fingers(State) ->
 % this way we dont have to look for all the extras every single time
 % if it isn't set it as fingers[Next]
 handle_fix_fingers(State, Next) ->
-    TargetId =  State#srv_state.sha + math:pow(2, (Next-1)),
-    Successor = handle_find_successor(TargetId, State),
-    Fingers = State#srv_state.fingers,
-    PrevFinger = lists:nth(Next - 1, Fingers),
+    TargetId   = State#srv_state.sha + math:pow(2, (Next - 1)),
+    {{ok, Successor}, _NewState} = handle_find_successor(TargetId, State),
+    Fingers    = State#srv_state.fingers,
+    PrevFinger = finger_before(Next, Fingers),
 
     case PrevFinger#finger.sha =:= Successor#finger.sha of
         true ->
@@ -504,3 +504,11 @@ make_sha([]) ->
     IdString = atom_to_list(node()) ++ Scope,  % not sure about this
     Sha = sha1:hexstring(IdString), 
     ch_id_utils:hex_to_int(Sha).               % for now, just store the finger as an int
+
+finger_before(N, Fingers) ->
+    case (N - 1) > 0 of
+      true ->
+        lists:nth(N - 1, Fingers);
+      false ->
+        lists:last(Fingers) % loop "back around" and return the last finger
+    end.

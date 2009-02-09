@@ -29,6 +29,8 @@ generate_diagram_test_() ->
          gen_server:call(testnode2, {stabilize}),
          gen_server:call(testnode1, {stabilize}),
 
+         gen_server:call(testnode1, {fix_fingers}),
+
          % connections missing:
          % * node3's predecessor should be node1
          % * node1's successor   should be node3
