@@ -21,15 +21,21 @@ generate_diagram_test_() ->
   {
       setup, fun setup/0,
       fun () ->
-         % io:format(user, "node1 ~p~n", [gen_server:call(testnode1, {return_state})]),
-         % io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),
-         % io:format(user, "node3 ~p~n", [gen_server:call(testnode3, {return_state})]),
-
          gen_server:call(testnode3, {stabilize}),
          gen_server:call(testnode2, {stabilize}),
+         io:format(user, "======================================~p~n", [a]),
          gen_server:call(testnode1, {stabilize}),
 
-         gen_server:call(testnode1, {fix_fingers}),
+         % stabilize here should set testnode3 as testnode1's successor because
+         % stabilize should be having testnode1 asking testnode2 'who is your predecessor?'
+         % testnode2 should respond "testnode3". testnode1 should see that testnode3 is within the 
+         % right segment and therefore set testnode3 as its successor
+
+         io:format(user, "node1 ~p~n", [gen_server:call(testnode1, {return_state})]),
+         io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),
+         io:format(user, "node3 ~p~n", [gen_server:call(testnode3, {return_state})]),
+
+         % gen_server:call(testnode1, {fix_fingers}),
 
          % connections missing:
          % * node3's predecessor should be node1

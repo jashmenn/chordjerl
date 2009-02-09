@@ -350,18 +350,26 @@ handle_stabilize(State) ->
 %% Arguments: Successor must not be self as a finger 
 %%--------------------------------------------------------------------
 handle_stabilize(State, Successor) ->
-    SuccPred = chordjerl_com:send(Successor, {return_predecessor}),
+    SuccPred = case chordjerl_com:send(Successor, {return_predecessor}) of
+        {finger, Finger} -> Finger;
+        _                -> undefined
+    end,
+
     {RealSuccessor, NewState} = case is_record(SuccPred, finger) of
         true -> 
+            io:format(user, "~p is asked ~p for its predecessor which is ~p~n", [State#srv_state.pid, Successor#finger.pid, SuccPred#finger.pid]),
+         
             case ch_id_utils:id_in_segment(State#srv_state.sha, 
                                            Successor#finger.sha, 
                                            SuccPred#finger.sha) of
                 true  -> 
+                    io:format(user, "~p is asked ~p for its predecessor which is ~p. the id is in the segement~n", [State#srv_state.pid, Successor#finger.pid, SuccPred#finger.pid]),
                     % SuccPred is our real Successor this is a State changing
                     % operation, not just a notification of SuccPred
                     {ok, NewState1} = handle_set_immediate_successor(SuccPred, State),
                     {SuccPred, NewState1};
                 false -> 
+                    io:format(user, "~p is asked ~p for its predecessor which is ~p. the id is NOT in the segement~n", [State#srv_state.pid, Successor#finger.pid, SuccPred#finger.pid]),
                     {Successor, State}
             end;
         false -> % if Successor has no predecessor, then just notify Seccessor
@@ -420,6 +428,7 @@ handle_fix_fingers(State) when State#srv_state.next > ?NBIT ->
     handle_fix_fingers(State, _Next=1);
 handle_fix_fingers(State) ->
     Next = State#srv_state.next + 1,
+    ?NTRACE("next is:", Next),
     handle_fix_fingers(State, Next).
 
 % find the successor for this number
