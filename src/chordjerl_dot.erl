@@ -69,4 +69,4 @@ markup_for_connection(Node, Finger) ->
 markup_for_predecessor(_Node, undefined) ->
     [];
 markup_for_predecessor(Node, Finger) ->
-    io_lib:format("~p -> ~p [style=dashed]~n", [Node#srv_state.sha, Finger#finger.sha]).
+    io_lib:format("~p -> ~p [style=dashed,arrowhead=open]~n", [Node#srv_state.sha, Finger#finger.sha]).
