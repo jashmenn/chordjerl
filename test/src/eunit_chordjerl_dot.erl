@@ -34,9 +34,9 @@ generate_diagram_test_() ->
          % testnode2 should respond "testnode3". testnode1 should see that testnode3 is within the 
          % right segment and therefore set testnode3 as its successor
 
-         io:format(user, "node1 ~p~n", [gen_server:call(testnode1, {return_state})]),
-         io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),
-         io:format(user, "node3 ~p~n", [gen_server:call(testnode3, {return_state})]),
+         % io:format(user, "node1 ~p~n", [gen_server:call(testnode1, {return_state})]),
+         % io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),
+         % io:format(user, "node3 ~p~n", [gen_server:call(testnode3, {return_state})]),
 
          % gen_server:call(testnode1, {fix_fingers}),
          % gen_server:call(testnode2, {fix_fingers}),

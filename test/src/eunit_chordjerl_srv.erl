@@ -52,16 +52,19 @@ find_successor_test_() ->
   {
       setup, fun setup2/0,
       fun () ->
-         %Response = gen_server:call(testnode2, {find_successor, State2#srv_state.sha}),
-         %?NTRACE("testnode2 find successor", [Response]),
-         %{ok, Successor3} = gen_server:call(testnode3, {find_successor, State3#srv_state.sha}),
-         %?NTRACE("testnode3 find successor", [Successor3]),
+         State1  = gen_server:call(testnode1, {return_state}),
+         State2  = gen_server:call(testnode2, {return_state}),
+         State3  = gen_server:call(testnode3, {return_state}),
+
+         {ok, Successor1} = gen_server:call(testnode1, {find_successor, State1#srv_state.sha}),
+         {ok, Successor2} = gen_server:call(testnode2, {find_successor, State2#srv_state.sha}),
+         {ok, Successor3} = gen_server:call(testnode3, {find_successor, State3#srv_state.sha}),
          {ok}
       end
   }.
 
 
-node_network_functional_test_() ->
+node_network_functional_test() ->
   {
       setup, fun setup2/0,
       fun () ->
