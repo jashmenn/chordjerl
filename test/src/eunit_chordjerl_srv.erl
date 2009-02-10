@@ -4,6 +4,18 @@
 
 -define(MOD, chordjerl_srv).
 
+-define(assertSuccessorShaEqual(State, Sha),
+    ((fun () ->
+        Finger = hd(State#srv_state.fingers),
+        ?assertEqual(Sha, Finger#finger.sha)
+      end)())).
+
+-define(join_node_to_node(Pid1, Pid2),
+    ((fun () ->
+        F1 = gen_server:call(Pid1, {return_finger_ref}),
+        ok = gen_server:call(Pid2, {join, F1})
+      end)())).
+
 setup() ->
   chordjerl_srv_sup:start_in_shell_for_testing().
 
@@ -56,52 +68,33 @@ find_successor_test_() ->
          State2  = gen_server:call(testnode2, {return_state}),
          State3  = gen_server:call(testnode3, {return_state}),
 
-         {ok, Successor1} = gen_server:call(testnode1, {find_successor, State1#srv_state.sha}),
-         {ok, Successor2} = gen_server:call(testnode2, {find_successor, State2#srv_state.sha}),
-         {ok, Successor3} = gen_server:call(testnode3, {find_successor, State3#srv_state.sha}),
+         {ok, _Successor1} = gen_server:call(testnode1, {find_successor, State1#srv_state.sha}),
+         {ok, _Successor2} = gen_server:call(testnode2, {find_successor, State2#srv_state.sha}),
+         {ok, _Successor3} = gen_server:call(testnode3, {find_successor, State3#srv_state.sha}),
          {ok}
       end
   }.
 
 
-node_network_functional_test() ->
+node_network_functional_test_() ->
   {
       setup, fun setup2/0,
       fun () ->
-         Node1   = gen_server:call(testnode1, {return_finger_ref}),
          State1  = gen_server:call(testnode1, {return_state}),
          Finger1 = gen_server:call(testnode1, {immediate_successor}),
-
-         ?assert(is_record(Node1, finger) =:= true),
-         ?assertEqual(State1#srv_state.sha, Finger1#finger.sha), % Node1 successor should be itself
+         ?assertEqual(State1#srv_state.sha, Finger1#finger.sha),  % Node1 successor should be itself
 
          % join the second node to the first 
-         ok     = gen_server:call(testnode2, {join, Node1}),
+         ?join_node_to_node(testnode1, testnode2), 
          State2 = gen_server:call(testnode2, {return_state}),
+         ?assertSuccessorShaEqual(State2, State1#srv_state.sha), % first finger should now be Node1 sha
 
-         % verify fingers
-         Fingers = State2#srv_state.fingers,
-         Finger2 = hd(Fingers),
-         Sha2    = Finger2#finger.sha,
-
-         ?assertEqual(1, length(Fingers)),
-         ?assertEqual(State1#srv_state.sha, Sha2), % first finger should now be Node1 sha
-
-         % here we need to stabilize and make sure the first node becomes
-         % connected to the second
-
-         % join the third node to the second
-         Node2   = gen_server:call(testnode2, {return_finger_ref}),
-         ok      = gen_server:call(testnode3, {join, Node2}),
+         % join the third node to the second 
+         ?join_node_to_node(testnode2, testnode3), 
          State3  = gen_server:call(testnode3, {return_state}),
-         Finger3 = hd(State3#srv_state.fingers),
-         Sha3    = Finger3#finger.sha,
-
-         ?assertEqual(1, length(State3#srv_state.fingers)),
-         ?assertEqual(State2#srv_state.sha, Sha3), % first finger should now be Node2 sha
+         ?assertSuccessorShaEqual(State3, State1#srv_state.sha), % first finger should now be Node1 sha
 
          {ok}
       end
   }.
-
 
