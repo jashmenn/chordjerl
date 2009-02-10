@@ -357,19 +357,15 @@ handle_stabilize(State, Successor) ->
 
     {RealSuccessor, NewState} = case is_record(SuccPred, finger) of
         true -> 
-            io:format(user, "~p is asked ~p for its predecessor which is ~p~n", [State#srv_state.pid, Successor#finger.pid, SuccPred#finger.pid]),
-         
             case ch_id_utils:id_in_segment(State#srv_state.sha, 
                                            Successor#finger.sha, 
                                            SuccPred#finger.sha) of
                 true  -> 
-                    io:format(user, "~p is asked ~p for its predecessor which is ~p. the id is in the segement~n", [State#srv_state.pid, Successor#finger.pid, SuccPred#finger.pid]),
                     % SuccPred is our real Successor this is a State changing
                     % operation, not just a notification of SuccPred
                     {ok, NewState1} = handle_set_immediate_successor(SuccPred, State),
                     {SuccPred, NewState1};
                 false -> 
-                    io:format(user, "~p is asked ~p for its predecessor which is ~p. the id is NOT in the segement~n", [State#srv_state.pid, Successor#finger.pid, SuccPred#finger.pid]),
                     {Successor, State}
             end;
         false -> % if Successor has no predecessor, then just notify Seccessor
