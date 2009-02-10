@@ -48,21 +48,27 @@ collect_all_fingers(Node, D) ->
 create_dot_from_nodes(Nodes) -> 
     G = "digraph messenger {\n" ++
         "fontname = \"Bitstream Vera Sans\"\nfontsize = 9\n" ++
-        "node [ fontname = \"Bitstream Vera Sans\"\n fontsize = 9\n shape = \"ellipse\"\n ]\n",
+        "node [ fontname = \"Bitstream Vera Sans\"\n fontsize = 9\n shape = \"ellipse\"\n ]\n" ++
+        "edge [ fontname = \"Bitstream Vera Sans\"\n fontsize = 9\n ]\n",
     G1 = G ++ lists:map(fun(Node) -> markup_for_node(Node) end, Nodes),
     G2 = G1 ++ "}\n",
     G2.
 
+% similar to ruby's #each_with_index:
+% lists:zip(L, lists:seq(1, length(L))).
 markup_for_node(Node) ->
     O  = io_lib:format("~p [label=\"~p\\n~p\\n~p\"]~n", 
             [Node#srv_state.sha, 
             gen_server:call(Node#srv_state.pid, {registered_name}), 
                             Node#srv_state.pid,
                             Node#srv_state.sha rem ?NBIT]),
-    O1 = O  ++ lists:map(fun(Finger) -> markup_for_connection(Node, Finger) end, Node#srv_state.fingers),
+    O1 = O  ++ [markup_for_connection(Node, Finger, Index) || {Finger, Index} <- lists:zip(Node#srv_state.fingers, lists:seq(1, length(Node#srv_state.fingers)))],
     O2 = O1 ++ markup_for_predecessor(Node, Node#srv_state.predecessor) ,
     O2.
 
+
+markup_for_connection(Node, Finger, Index) ->
+    io_lib:format("~p -> ~p [label=~p]~n", [Node#srv_state.sha, Finger#finger.sha, Index]).
 markup_for_connection(Node, Finger) ->
     io_lib:format("~p -> ~p~n", [Node#srv_state.sha, Finger#finger.sha]).
 
