@@ -55,15 +55,12 @@ id_in_segment(Start, End, QueryId) when End == Start ->
 % If Start > End e.g. Start = 100, End = 1, then we know we are trying to go
 % around the end of the ring. Therefore, if QueryId is 101 we return true, if
 % it is 50 we would return false.
-% 
-% Above is not necessarily true.
-% OK. where we're at: in the case of at the start of creating a new ring.
-% we need to go around the loop. so if start > end then we're trying to go around the loop.
-% then is it always true??? todo, plug in real numbers here 
+%
+% BUT if Start = 100, End = 51 then 50 = true
 id_in_segment(Start, End, QueryId) when Start > End -> % new
-      QueryId < End;                                   % new
+      QueryId < End orelse QueryId > Start;            % new
 id_in_segment(Start, End, QueryId) -> 
-      QueryId > Start.
+       QueryId > Start.
 
 
 %%--------------------------------------------------------------------

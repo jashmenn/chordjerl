@@ -55,9 +55,10 @@ id_in_segement_test_() ->
               {5,      10,       5, false},
               {5,      10,       6,  true},
               {100,    1,        6, false},
-              {100,    1,      101,  true}, % hmm...
+              {100,    1,      101,  true}, % note...
               {100,    1,       50, false}, 
-              {1,      1,        1,  true} 
+              {1,      1,        1,  true},
+              {112,   59,       36,  true} 
          ],
                
         [ ?assertEqual(Wanted, ch_id_utils:id_in_segment(Start, End, QueryId)) || {Start, End, QueryId, Wanted} <- Values ]
