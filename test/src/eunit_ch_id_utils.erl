@@ -61,7 +61,7 @@ id_in_segement_test_() ->
               {112,   59,       36,  true} 
          ],
                
-        [ ?assertEqual(Wanted, ch_id_utils:id_in_segment(Start, End, QueryId)) || {Start, End, QueryId, Wanted} <- Values ]
+        [ ?assertEqual(Wanted, ch_id_utils:id_between_oc(Start, End, QueryId)) || {Start, End, QueryId, Wanted} <- Values ]
       end
   }.
 

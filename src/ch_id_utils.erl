@@ -40,28 +40,36 @@ hex_to_int(HexStr) ->
     % io:format(user, "Hex: ~p Int: ~p~n", [HexStr, IntStr]),
     list_to_integer(IntStr).
 
+
 %%--------------------------------------------------------------------
-%% Function: id_in_segment(Start, End, QueryId) -> true | false
+%% Function: id_between_oc(Start, End, QueryId) -> true | false
 %% Description: 
 %% Looks for QueryId by examining the segment of the Chord ring moving
 %% clockwise from (but not including) Start until reaching (and including) End.
 %% Returns true if QueryId is in this range, false otherwise. Represents the
 %% notation (a, b] in the Chord paper.
+%%
+%% Determine whether id is contained in the half-open interval of the
+%% Chord ring (n, s]
+%%
+%% see: http://mathworld.wolfram.com/Interval.html
+%%  An interval [a,a] is called a degenerate interval.
 %%--------------------------------------------------------------------
-id_in_segment(Start, End, QueryId) when End > Start -> % common case
-      QueryId > Start andalso QueryId =< End;
-id_in_segment(Start, End, QueryId) when End == Start -> 
-      QueryId == End;
-% If Start > End e.g. Start = 100, End = 1, then we know we are trying to go
-% around the end of the ring. Therefore, if QueryId is 101 we return true, if
-% it is 50 we would return false.
-%
-% BUT if Start = 100, End = 51 then 50 = true
-id_in_segment(Start, End, QueryId) when Start > End -> % new
-      QueryId < End orelse QueryId > Start;            % new
-id_in_segment(Start, End, QueryId) -> 
-       QueryId > Start.
+id_between_oc(Start, End, QueryId) when Start == End -> % degenerate interval
+    true;
+id_between_oc(Start, End, QueryId) when Start < End  ->  % interval does not wrap
+    Start < QueryId andalso Start >= QueryId;
+id_between_oc(Start, End, QueryId)                   ->  % interval wrap
+    Start < QueryId orelse  Start >= QueryId.
 
+%% Determine whether id is contained in the open interval of the
+%% Chord ring (n, s).
+id_between_oo(Start, End, QueryId) when Start == End -> % degenerate interval
+    Start =/= QueryId;
+id_between_oo(Start, End, QueryId) when Start < End  -> % interval does not wrap
+    Start < QueryId andalso Start > QueryId;
+id_between_oo(Start, End, QueryId)                   -> % interval wraps
+    Start < QueryId orelse  Start > QueryId.
 
 %%--------------------------------------------------------------------
 %% Function: bbsl
