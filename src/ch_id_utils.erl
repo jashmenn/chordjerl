@@ -58,26 +58,15 @@ hex_to_int(HexStr) ->
 id_between_oc(Start, End, QueryId) when Start == End -> % degenerate interval
     true;
 id_between_oc(Start, End, QueryId) when Start < End  ->  % interval does not wrap
-    Start < QueryId andalso Start >= QueryId;
+    Start < QueryId andalso End >= QueryId;
 id_between_oc(Start, End, QueryId)                   ->  % interval wrap
-    Start < QueryId orelse  Start >= QueryId.
+    Start < QueryId orelse  End >= QueryId.
 
 %% Determine whether id is contained in the open interval of the
 %% Chord ring (n, s).
 id_between_oo(Start, End, QueryId) when Start == End -> % degenerate interval
     Start =/= QueryId;
 id_between_oo(Start, End, QueryId) when Start < End  -> % interval does not wrap
-    Start < QueryId andalso Start > QueryId;
+    Start < QueryId andalso End > QueryId;
 id_between_oo(Start, End, QueryId)                   -> % interval wraps
-    Start < QueryId orelse  Start > QueryId.
-
-%%--------------------------------------------------------------------
-%% Function: bbsl
-%% Description: Binary Shift Left
-%% From: http://is.gd/h4Xo
-%% I don't really think it works...
-%%--------------------------------------------------------------------
-bbsl(Bin,Shift) -> 
-  <<_:Shift,Rest/bits>> = Bin, <<Rest/bits,0:Shift>>.
-
-
+    Start < QueryId orelse  End > QueryId.

@@ -45,19 +45,21 @@ successor_id_test_() ->
       end
   }.
 
-id_in_segement_test_() ->
+id_between_oc_test_() ->
   {
       setup, fun setup/0,
       fun () ->
         Values = [ 
             % {Start, End, QueryId, Wanted}
               {0,      10,       5,  true},
+              {0,      10,      10,  true},
               {5,      10,       5, false},
               {5,      10,       6,  true},
               {100,    1,        6, false},
-              {100,    1,      101,  true}, % note...
+              {100,    1,      101,  true}, % wrapping
               {100,    1,       50, false}, 
               {1,      1,        1,  true},
+              {1,      1,        2,  true}, % eh?
               {112,   59,       36,  true} 
          ],
                
@@ -65,22 +67,24 @@ id_in_segement_test_() ->
       end
   }.
 
-
-
-bin_shift_left_test_() ->
+id_between_oo_test_() ->
   {
       setup, fun setup/0,
       fun () ->
-         Base  = <<1>>,
-         Shift = 1,
-
-         Shifted = ch_id_utils:bbsl(Base, Shift)
-         % io:format(user, "~p~n", [Shifted]),
-         % BitString = bin_to_bitstring(Shifted),
-         %io:format(user, "~p~n", [BitString])
-         %ShiftedInBits = hd(io_lib:format("~.2B", [Shifted])),
-         %io:fwrite("~p~n", [ShiftedInBits])
+        Values = [ 
+            % {Start, End, QueryId, Wanted}
+              {0,      10,       5,  true},
+              {0,      10,      10, false},
+              {5,      10,       5, false},
+              {5,      10,       6,  true},
+              {100,    1,        6, false},
+              {100,    1,      101,  true}, 
+              {100,    1,       50, false}, 
+              {1,      1,        1, false},
+              {1,      1,        2,  true},
+              {112,   59,       36,  true} 
+         ],
+               
+        [ ?assertEqual(Wanted, ch_id_utils:id_between_oo(Start, End, QueryId)) || {Start, End, QueryId, Wanted} <- Values ]
       end
   }.
-
-
