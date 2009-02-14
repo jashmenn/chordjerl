@@ -60,6 +60,7 @@ id_between_oc_test_() ->
               {100,    1,       50, false}, 
               {1,      1,        1,  true},
               {1,      1,        2,  true}, % eh?
+              {1,      1,       50,  true}, 
               {112,   59,       36,  true} 
          ],
                

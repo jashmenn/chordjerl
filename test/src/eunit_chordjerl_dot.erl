@@ -9,7 +9,7 @@ setup() -> % todo, figure out how to tear-down
      chordjerl_srv:start_named(testnode1),
      chordjerl_srv:start_named(testnode2),
      chordjerl_srv:start_named(testnode3),
-     % chordjerl_srv:start_named(testnode4),
+     chordjerl_srv:start_named(testnode4),
 
      ok     = gen_server:call(testnode1, {create_ring}),
      Node1  = gen_server:call(testnode1, {return_finger_ref}),
@@ -17,14 +17,14 @@ setup() -> % todo, figure out how to tear-down
      Node2  = gen_server:call(testnode2, {return_finger_ref}),
      ok     = gen_server:call(testnode3, {join, Node2}),
      Node3  = gen_server:call(testnode3, {return_finger_ref}),
-     % ok     = gen_server:call(testnode4, {join, Node3}),
+     ok     = gen_server:call(testnode4, {join, Node3}), % what's happening is the node is being asked itself to find a node
      {ok}.
 
 generate_diagram_test_() ->
   {
       setup, fun setup/0,
       fun () ->
-         % gen_server:call(testnode4, {stabilize}),
+         gen_server:call(testnode4, {stabilize}),
          gen_server:call(testnode3, {stabilize}),
          gen_server:call(testnode2, {stabilize}),
          gen_server:call(testnode1, {stabilize}),
