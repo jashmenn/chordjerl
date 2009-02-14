@@ -295,22 +295,17 @@ handle_joined_by(_Finger, State) ->
 handle_find_successor(Id, State) -> % could use a refactoring...
     SuccessorFinger = successor(State),
     SuccessorId = SuccessorFinger#finger.sha,
-    case State#srv_state.sha =:= SuccessorId of
-        true ->
-            {{ok, SuccessorFinger}, State}; % if successor is self, return self
-        false ->
-            case ch_id_utils:id_between_oc(State#srv_state.sha, SuccessorId, Id) of
-                true  -> 
-                   {{ok, SuccessorFinger}, State};
-                false -> % find recursively
-                   {{ok, Finger}, _NewState} = handle_closest_preceding_node(Id, State),
-                   case Finger#finger.pid =:= self() of                      
-                     true ->
-                        {{ok, Finger}, State};
-                     false ->
-                        chordjerl_com:send(Finger, {find_successor, Id})
-                   end
-            end
+    case ch_id_utils:id_between_oc(State#srv_state.sha, SuccessorId, Id) of
+        true  -> 
+           {{ok, SuccessorFinger}, State};
+        false -> % find recursively
+           {{ok, Finger}, _NewState} = handle_closest_preceding_node(Id, State),
+           case Finger#finger.pid =:= self() of                      
+             true ->
+                {{ok, Finger}, State};
+             false ->
+                chordjerl_com:send(Finger, {find_successor, Id})
+           end
     end.
 
 handle_immediate_successor(State) ->
