@@ -304,7 +304,7 @@ handle_find_successor(Id, State) -> % could use a refactoring...
              true ->
                 {{ok, Finger}, State};
              false ->
-                chordjerl_com:send(Finger, {find_successor, Id})
+                {chordjerl_com:send(Finger, {find_successor, Id}), State}
            end
     end.
 
