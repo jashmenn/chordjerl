@@ -265,6 +265,7 @@ handle_create_ring(State) ->
     {ok, NewState}.
 
 handle_join(Finger, State) ->
+    % ?NTRACE("handle_join", [{State#srv_state.pid, State#srv_state.sha}, {joining, Finger#finger.pid} ]),
     Response = chordjerl_com:send(Finger, {find_successor, State#srv_state.sha}),
     case Response of
         {ok, NewFinger} -> 
@@ -300,8 +301,8 @@ handle_find_successor(Id, State) -> % could use a refactoring...
            {{ok, SuccessorFinger}, State};
         false -> % find recursively
            {{ok, Finger}, _NewState} = handle_closest_preceding_node(Id, State),
-           case Finger#finger.pid =:= self() of                      
-             true ->
+           case Finger#finger.sha =:= State#srv_state.sha of                      
+             true -> % hmm, suspecious clause here.
                 {{ok, Finger}, State};
              false ->
                 {chordjerl_com:send(Finger, {find_successor, Id}), State}
@@ -419,7 +420,6 @@ handle_fix_fingers(State) when State#srv_state.next > ?NBIT ->
     handle_fix_fingers(State, _Next=1);
 handle_fix_fingers(State) ->
     Next = State#srv_state.next + 1,
-    ?NTRACE("next is:", Next),
     handle_fix_fingers(State, Next).
 
 % find the successor for this number
