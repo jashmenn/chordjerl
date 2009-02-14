@@ -316,7 +316,7 @@ handle_closest_preceding_node(Id, State) ->
     handle_closest_preceding_node(Id, State, FingersR).
 
 handle_closest_preceding_node(Id, State, [Finger|T]) ->
-    case ch_id_utils:id_between_oo(State#srv_state.sha, Finger#finger.sha, Id) of
+    case ch_id_utils:id_between_oo(State#srv_state.sha, Id, Finger#finger.sha) of 
         true  -> 
            {{ok, Finger}, State};
         false -> 
