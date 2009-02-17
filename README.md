@@ -13,23 +13,23 @@ desired data item in a decentralized, peer-to-peer system. The Chord algorithm p
 Chord provides support for just one operation: given a key, it maps the key
 onto a node.
 
-
 You can read more about Chord in the paper from Stoica et al. "Chord: A
 Scalable Peer-to-peer Lookup Protocol for Internet Applications" (http://pdos.csail.mit.edu/papers/ton:chord/paper-ton.pdf)
-
 
 Status
 =======
 
-Planning stages
+Pre-Alpha 
 
-(Planned) Features
-========
+Integration
+===========
 
- * Virtual Nodes
- * Behavior module to help implement the value store
- * Optional extensions to routing algorithm/finger table such as node uptime,
-   network latency, etc.
- * Support for LAN or WAN use
- 
+Chordjerl is designed to work with Ari Lerner's `layers` <http://github.com/auser/layers/tree/master> and `converse` <http://github.com/auser/converse/tree/master>
 
+
+Screenshots
+===========
+
+Here's a simple network where each node has 1 finger. Dotted lines denote predecessors. (m=7)
+
+![nodes!](http://github.com/jashmenn/chordjerl/tree/master/doc/simple_nodes.png?raw=true)
