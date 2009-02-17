@@ -5,3 +5,5 @@ ebin
 session
 server.dot
 server.png
+graphs
+graphs/*

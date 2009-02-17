@@ -1,5 +1,5 @@
 -module(ch_utils).
--export([max/1, list_replace_n/3]).
+-export([max/1, list_replace_n/3, partition_integer/2]).
 
 % max from http://www.zorched.net/2008/05/28/erlang-example-min-and-max-element-of-a-list/
 max([H|T]) ->
@@ -25,3 +25,12 @@ list_replace_n(N, NewElement, List) ->
    {L1, L2} = lists:split(N - 1, List), 
    [_H|T] = L2,
    lists:append([L1, [NewElement], T]).
+
+
+partition_integer(N,P) ->
+    partition_integer(lists:reverse(integer_to_list(N)),P,[]).
+
+partition_integer([A,B,C,D|T],P,Acc) ->
+    partition_integer([D|T],P,[P,C,B,A|Acc]);
+partition_integer(L,_,Acc) ->
+    lists:reverse(L) ++ Acc.

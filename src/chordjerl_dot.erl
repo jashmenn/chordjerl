@@ -61,18 +61,27 @@ markup_for_node(Node) ->
             [Node#srv_state.sha, 
             gen_server:call(Node#srv_state.pid, {registered_name}), 
                             Node#srv_state.pid,
-                            Node#srv_state.sha rem ?NBIT]),
+                            Node#srv_state.sha]), 
     O1 = O  ++ [markup_for_connection(Node, Finger, Index) || {Finger, Index} <- lists:zip(Node#srv_state.fingers, lists:seq(1, length(Node#srv_state.fingers)))],
-    O2 = O1 ++ markup_for_predecessor(Node, Node#srv_state.predecessor) ,
-    O2.
+    O2 = O1 ++ markup_for_predecessor(Node, Node#srv_state.predecessor),
+    O3 = O2 ++ markup_for_finger_table(Node),
+    O3.
 
 
 markup_for_connection(Node, Finger, Index) ->
-    io_lib:format("~p -> ~p [label=~p]~n", [Node#srv_state.sha, Finger#finger.sha, Index]).
-markup_for_connection(Node, Finger) ->
-    io_lib:format("~p -> ~p~n", [Node#srv_state.sha, Finger#finger.sha]).
+    case Index > 1 andalso 
+         lists:nth(Index, Node#srv_state.fingers) =:= lists:nth(Index - 1, Node#srv_state.fingers) of
+        true -> []; % skip it
+        false -> io_lib:format("~p -> ~p [label=~p]~n", [Node#srv_state.sha, Finger#finger.sha, Index])
+    end.
 
 markup_for_predecessor(_Node, undefined) ->
     [];
 markup_for_predecessor(Node, Finger) ->
     io_lib:format("~p -> ~p [style=dashed,arrowhead=open]~n", [Node#srv_state.sha, Finger#finger.sha]).
+
+markup_for_finger_table(Node) ->
+    Fingers = [io_lib:format("~p: ~p\\l", [Index, Finger#finger.sha]) || {Finger, Index} <- lists:zip(Node#srv_state.fingers, lists:seq(1, length(Node#srv_state.fingers)))],
+    Name = gen_server:call(Node#srv_state.pid, {registered_name}),
+    O  = io_lib:format("~p_finger_table [label=\"{~p fingers|~s}\", shape=record]~n", [Name, Name, Fingers]),
+    O.

@@ -4,7 +4,9 @@
 
 -define(MOD, chordjerl_srv).
 
-setup() -> % todo, figure out how to tear-down
+setup() -> 
+     filelib:ensure_dir("./graphs/"),
+
      % start three nodes
      chordjerl_srv:start_named(testnode1),
      chordjerl_srv:start_named(testnode2),
@@ -18,46 +20,50 @@ setup() -> % todo, figure out how to tear-down
      ok     = gen_server:call(testnode3, {join, Node2}),
      Node3  = gen_server:call(testnode3, {return_finger_ref}),
      ok     = gen_server:call(testnode4, {join, Node3}), % what's happening is the node is being asked itself to find a node
+     Node4  = gen_server:call(testnode4, {return_finger_ref}),
+
+     % Shas = [{testnode1, Node1#finger.sha}, {testnode2, Node2#finger.sha}, {testnode3, Node3#finger.sha}, {testnode4, Node4#finger.sha}],
+     % io:format(user, "~p~n", [lists:keysort(2, Shas)]),
+
      {ok}.
 
 generate_diagram_test_() ->
   {
       setup, fun setup/0,
       fun () ->
-         gen_server:call(testnode4, {stabilize}),
-         gen_server:call(testnode3, {stabilize}),
-         gen_server:call(testnode2, {stabilize}),
-         gen_server:call(testnode1, {stabilize}),
+         write_diagram_to_file(testnode4, 0, 0),
 
-         % stabilize here should set testnode3 as testnode1's successor because
-         % stabilize should be having testnode1 asking testnode2 'who is your predecessor?'
-         % testnode2 should respond "testnode3". testnode1 should see that testnode3 is within the 
-         % right segment and therefore set testnode3 as its successor
+         Max = 4,
+         Iterations = 4,
+         [ [ (fun() ->
+                     NodeName     = list_to_atom("testnode" ++ integer_to_list(I)),
+                     gen_server:call(NodeName, {stabilize}),
+                     %gen_server:call(NodeName, {fix_fingers}),
+                     write_diagram_to_file(testnode4, I, J)
+              end)() || I <- lists:seq(1, Max) ]
+         || J <- lists:seq(1, Iterations) ],
 
-         % io:format(user, "node1 ~p~n", [gen_server:call(testnode1, {return_state})]),
-         % io:format(user, "node2 ~p~n", [gen_server:call(testnode2, {return_state})]),
-         % io:format(user, "node3 ~p~n", [gen_server:call(testnode3, {return_state})]),
+         write_diagram_to_file(testnode4, done, done),
 
-         % gen_server:call(testnode1, {fix_fingers}),
-         % gen_server:call(testnode2, {fix_fingers}),
-         % gen_server:call(testnode3, {fix_fingers}),
-
-         % connections missing:
-         % * node3's predecessor should be node1
-         % * node1's successor   should be node3
-
-         Response = chordjerl_dot:generate_server_graph(testnode3),
-         {ok, FileId} = file:open("server.dot", [write]),
-         io:fwrite(FileId, "~s~n", [Response]),
-         file:close(FileId),
          {ok}
       end
   }.
+
+write_diagram_to_file(Nodename, I, J) -> 
+    Response = chordjerl_dot:generate_server_graph(Nodename),
+    FileName = io_lib:format("graphs/server_~p_~p.dot", [I, J]),
+    io:format(user, "writing to ~s~n", [FileName]),
+    {ok, FileId} = file:open(FileName, [write]),
+    io:fwrite(FileId, "~s~n", [Response]),
+    file:close(FileId).
+
+
 
 setup2() ->
     {ok}.
 
 generate_dynamic_diagram_test_() ->
+% generate_dynamic_diagram() ->
   {
       setup, fun setup2/0,
       fun () ->
@@ -79,18 +85,16 @@ generate_dynamic_diagram_test_() ->
              || I <- lists:seq(1, Max)
          ],
 
-         % stabilize each node Max times
+         % stabilize each node a few times
+         Iterations = 50,
          [ [ (fun() ->
                      NodeName     = list_to_atom("testnode" ++ integer_to_list(I)),
                      gen_server:call(NodeName, {stabilize})
               end)() || I <- lists:seq(1, Max) ]
-         || J <- lists:seq(1, Max) ],
+         || J <- lists:seq(1, Iterations) ],
 
          LastNodeName = list_to_atom("testnode" ++ integer_to_list(Max)),
-         Response = chordjerl_dot:generate_server_graph(LastNodeName),
-         {ok, FileId} = file:open("server3.dot", [write]),
-         io:fwrite(FileId, "~s~n", [Response]),
-         file:close(FileId),
+         write_diagram_to_file(LastNodeName, large, done),
          {ok}
       end
   }.

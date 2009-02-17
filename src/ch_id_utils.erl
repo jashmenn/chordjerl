@@ -70,3 +70,6 @@ id_between_oo(Start, End, QueryId) when Start < End  -> % interval does not wrap
     Start < QueryId andalso End > QueryId;
 id_between_oo(Start, End, QueryId)                   -> % interval wraps
     Start < QueryId orelse  End > QueryId.
+
+
+%Node#srv_state.sha rem math:pow(2, ?NBIT)

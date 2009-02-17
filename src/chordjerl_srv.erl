@@ -187,6 +187,8 @@ handle_call({stabilize}, _From, State) ->
     {reply, Reply, NewState};
 
 handle_call({claim_to_be_predecessor, Node}, _From, State) ->
+    % io:format(user, "rec'd a claim to be predecessor on ~p ~p from ~p ~p~n", 
+    %     [State#srv_state.sha, State#srv_state.pid, Node#finger.sha, Node#finger.pid]),
     {Reply, NewState} = handle_claim_to_be_predecessor(Node, State),
     {reply, Reply, NewState};
 
@@ -317,7 +319,7 @@ handle_closest_preceding_node(Id, State) ->
     handle_closest_preceding_node(Id, State, FingersR).
 
 handle_closest_preceding_node(Id, State, [Finger|T]) ->
-    case ch_id_utils:id_between_oo(State#srv_state.sha, Id, Finger#finger.sha) of 
+    case ch_id_utils:id_between_oo(State#srv_state.sha, Id, Finger#finger.sha) of % one book says _oc
         true  -> 
            {{ok, Finger}, State};
         false -> 
@@ -381,7 +383,12 @@ handle_return_predecessor(State) ->
     end.
 
 handle_claim_to_be_predecessor(Node, State) when is_record(Node, finger) -> 
-    Predecessor = handle_return_predecessor(State),
+    PredecessorResponse = handle_return_predecessor(State),
+    Predecessor = case PredecessorResponse of
+        {finger, Finger} -> Finger;
+        _                -> undefined
+    end,
+
     {Response, NewState} = if
         undefined =:= Predecessor -> 
             handle_set_new_predecessor(Node, State);
@@ -427,20 +434,20 @@ handle_fix_fingers(State) ->
 % this way we dont have to look for all the extras every single time
 % if it isn't set it as fingers[Next]
 handle_fix_fingers(State, Next) ->
-    TargetId   = State#srv_state.sha + math:pow(2, (Next - 1)),
+    TargetId = ch_id_utils:successor_id(State#srv_state.sha, Next),
+    % ?NTRACE("fixing fingers finding successor", {next, Next, statesha, State#srv_state.sha, sha, TargetId}),
+
     {{ok, Successor}, _NewState} = handle_find_successor(TargetId, State),
     Fingers    = State#srv_state.fingers,
-    PrevFinger = finger_before(Next, Fingers),
 
-    case PrevFinger#finger.sha =:= Successor#finger.sha of
-        true ->
-            NewNext = 1,
-            {ok, State#srv_state{next=NewNext}};
-        false ->
-            NewFingers = ch_utils:list_replace_n(Next, Successor, Fingers),
-            {ok, State#srv_state{next=Next,fingers=NewFingers}}
-    end.
-            
+    NewFingers = case length(Fingers) < Next of
+        true  -> Fingers ++ [undefined];
+        false -> Fingers
+    end,
+
+    ?NTRACE("replacing next with successor", {next, Next, successor, Successor#finger.sha}),
+    NewFingers2 = ch_utils:list_replace_n(Next, Successor, NewFingers),
+    {ok, State#srv_state{next=Next,fingers=NewFingers2}}.
 
 handle_check_predecessor(_State) ->
     {todo}.
@@ -455,7 +462,9 @@ handle_return_finger_ref(State) ->
 handle_set_immediate_successor(NewSuccessor, State) ->
     % io:format(user, "setting new successor for ~p ~p to ~p ~p~n", 
     %      [State#srv_state.sha, State#srv_state.pid, NewSuccessor#finger.sha, NewSuccessor#finger.pid]),
-    NewState = State#srv_state{fingers=[NewSuccessor|State#srv_state.fingers]},
+    % NewState = State#srv_state{fingers=[NewSuccessor|State#srv_state.fingers]},
+    NewFingers = ch_utils:list_replace_n(1, NewSuccessor, State#srv_state.fingers),
+    NewState = State#srv_state{fingers=NewFingers},
     {ok, NewState}.
 
 %%--------------------------------------------------------------------
@@ -503,8 +512,10 @@ make_sha([]) ->
 
     IdString = atom_to_list(node()) ++ Scope,  % not sure about this
     Sha = sha1:hexstring(IdString), 
-    ch_id_utils:hex_to_int(Sha).               % for now, just store the finger as an int
+    Int = ch_id_utils:hex_to_int(Sha),               % for now, just store the finger as an int
+    Int rem ?NBITMOD.
 
+% return the finger previous to the index N
 finger_before(N, Fingers) ->
     case (N - 1) > 0 of
       true ->
