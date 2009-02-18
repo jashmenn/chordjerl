@@ -348,6 +348,7 @@ handle_stabilize(State) ->
 %% Arguments: Successor must not be self as a finger 
 %%--------------------------------------------------------------------
 handle_stabilize(State, Successor) ->
+    ?NTRACE("stabilizing", []),
     SuccPred = case chordjerl_com:send(Successor, {return_predecessor}) of
         {finger, Finger} -> Finger;
         _                -> undefined
@@ -423,7 +424,7 @@ handle_set_new_predecessor(Node, State) ->
 % 
 handle_fix_fingers(State) when State#srv_state.next =:= 0 ->
     handle_fix_fingers(State, _Next=1);  % leave successor handling to stabilize
-handle_fix_fingers(State) when State#srv_state.next > ?NBIT ->
+handle_fix_fingers(State) when State#srv_state.next > ?MAXFINGERS ->
     handle_fix_fingers(State, _Next=1);
 handle_fix_fingers(State) ->
     Next = State#srv_state.next + 1,
@@ -434,20 +435,22 @@ handle_fix_fingers(State) ->
 % this way we dont have to look for all the extras every single time
 % if it isn't set it as fingers[Next]
 handle_fix_fingers(State, Next) ->
+    % ?NTRACE("fixing fingers", Next),
     TargetId = ch_id_utils:successor_id(State#srv_state.sha, Next),
-    % ?NTRACE("fixing fingers finding successor", {next, Next, statesha, State#srv_state.sha, sha, TargetId}),
-
     {{ok, Successor}, _NewState} = handle_find_successor(TargetId, State),
-    Fingers    = State#srv_state.fingers,
 
-    NewFingers = case length(Fingers) < Next of
-        true  -> Fingers ++ [undefined];
-        false -> Fingers
-    end,
-
-    ?NTRACE("replacing next with successor", {next, Next, successor, Successor#finger.sha}),
-    NewFingers2 = ch_utils:list_replace_n(Next, Successor, NewFingers),
-    {ok, State#srv_state{next=Next,fingers=NewFingers2}}.
+    case State#srv_state.sha =:= Successor#finger.sha of
+        true -> % don't add the finger if it is ourself
+            {ok, State#srv_state{next=1}};
+        false ->
+            Fingers    = State#srv_state.fingers,
+            NewFingers = case length(Fingers) < Next of
+                true  -> Fingers ++ [undefined];
+                false -> Fingers
+            end,
+            NewFingers2 = ch_utils:list_replace_n(Next, Successor, NewFingers),
+            {ok, State#srv_state{next=Next,fingers=NewFingers2}}
+    end.
 
 handle_check_predecessor(_State) ->
     {todo}.

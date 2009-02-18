@@ -6,6 +6,7 @@
 -define (RECONNECT_TIMEOUT, 10000).
 %-define (NBIT, 160). % number of bits in the hash function
 -define (NBIT, 7). % number of bits in the hash function
+-define (MAXFINGERS, ?NBIT). % number of bits in the hash function
 -define (NBITMOD, round(math:pow(2, ?NBIT))).
 
 % may merge finger-like attributes into the srv state. Maybe

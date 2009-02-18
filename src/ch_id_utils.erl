@@ -15,19 +15,28 @@
 %% 
 %% Code ported from chord c code. Math needs a double check.
 %%--------------------------------------------------------------------
+% successor_id(CurrentId, Index) ->
+%   B = (1 bsl ?NBIT) - 1,
+%   S = case is_list(CurrentId) of
+%             true  ->  hex_to_int(CurrentId);
+%             false ->  CurrentId
+%       end,
+%   T = (1 bsl Index),
+%   SuccessorId = S + T,
+%   SuccessorIdAnd = SuccessorId band B,
+%   SuccessorIdAnd.
+
 successor_id(CurrentId, Index) ->
-  B = (1 bsl ?NBIT) - 1,
   S = case is_list(CurrentId) of
             true  ->  hex_to_int(CurrentId);
             false ->  CurrentId
       end,
-  T = (1 bsl Index),
-  SuccessorId = S + T,
-  SuccessorIdAnd = SuccessorId band B,
-  SuccessorIdAnd.
+  T = math:pow(2, Index - 1),
+  Added = round(S + T), 
+  SuccessorID = round(Added rem ?NBITMOD).
 
 successor_id(CurrentId) ->
-  successor_id(CurrentId, 0).
+  successor_id(CurrentId, 1).
 
 %%--------------------------------------------------------------------
 %% Function: hex_to_int(HexStr) -> Integer
