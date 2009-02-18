@@ -12,6 +12,7 @@ setup() ->
      chordjerl_srv:start_named(testnode2),
      chordjerl_srv:start_named(testnode3),
      chordjerl_srv:start_named(testnode4),
+     chordjerl_srv:start_named(testnode5),
 
      ok     = gen_server:call(testnode1, {create_ring}),
      Node1  = gen_server:call(testnode1, {return_finger_ref}),
@@ -19,8 +20,11 @@ setup() ->
      Node2  = gen_server:call(testnode2, {return_finger_ref}),
      ok     = gen_server:call(testnode3, {join, Node2}),
      Node3  = gen_server:call(testnode3, {return_finger_ref}),
-     ok     = gen_server:call(testnode4, {join, Node3}), % what's happening is the node is being asked itself to find a node
+     ok     = gen_server:call(testnode4, {join, Node3}), 
      Node4  = gen_server:call(testnode4, {return_finger_ref}),
+     ok     = gen_server:call(testnode5, {join, Node4}), 
+     Node5  = gen_server:call(testnode5, {return_finger_ref}),
+
 
      % Shas = [{testnode1, Node1#finger.sha}, {testnode2, Node2#finger.sha}, {testnode3, Node3#finger.sha}, {testnode4, Node4#finger.sha}],
      % io:format(user, "~p~n", [lists:keysort(2, Shas)]),
@@ -31,19 +35,20 @@ generate_diagram_test_() ->
   {
       setup, fun setup/0,
       fun () ->
-         write_diagram_to_file(testnode4, 0, 0),
+         write_diagram_to_file(testnode5, 0, 0),
 
-         Max = 4,
-         Iterations = 4,
+         Max = 5,
+         Iterations = 50,
          [ [ (fun() ->
                      NodeName     = list_to_atom("testnode" ++ integer_to_list(I)),
                      gen_server:call(NodeName, {stabilize}),
-                     %gen_server:call(NodeName, {fix_fingers}),
-                     write_diagram_to_file(testnode4, I, J)
+                     gen_server:call(NodeName, {fix_fingers}),
+                     %write_diagram_to_file(testnode5, I, J),
+                     ok
               end)() || I <- lists:seq(1, Max) ]
          || J <- lists:seq(1, Iterations) ],
 
-         write_diagram_to_file(testnode4, done, done),
+         write_diagram_to_file(testnode5, done, done),
 
          {ok}
       end
@@ -67,7 +72,7 @@ generate_dynamic_diagram_test_() ->
   {
       setup, fun setup2/0,
       fun () ->
-         Max = 12,
+         Max = 7,
          [
              (fun() ->
                  PrevNodeName = list_to_atom("testnode" ++ integer_to_list(I - 1)),
@@ -86,15 +91,28 @@ generate_dynamic_diagram_test_() ->
          ],
 
          % stabilize each node a few times
-         Iterations = 50,
+         Iterations = 7,
          [ [ (fun() ->
                      NodeName     = list_to_atom("testnode" ++ integer_to_list(I)),
-                     gen_server:call(NodeName, {stabilize})
+                     gen_server:call(NodeName, {stabilize}),
+                     gen_server:call(NodeName, {fix_fingers})
               end)() || I <- lists:seq(1, Max) ]
          || J <- lists:seq(1, Iterations) ],
 
          LastNodeName = list_to_atom("testnode" ++ integer_to_list(Max)),
+         write_diagram_to_file(LastNodeName, large, first),
+
+         io:format(user, "===================================~n", []),
+         gen_server:call(testnode2, {stabilize}),
+         gen_server:call(testnode2, {fix_fingers}),
+         gen_server:call(testnode2, {fix_fingers}),
+         gen_server:call(testnode2, {fix_fingers}),
+         gen_server:call(testnode2, {fix_fingers}),
+         gen_server:call(testnode2, {fix_fingers}),
+         % gen_server:call(testnode2, {stabilize}),
+
          write_diagram_to_file(LastNodeName, large, done),
+
          {ok}
       end
   }.
