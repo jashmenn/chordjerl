@@ -51,13 +51,15 @@ create_dot_from_nodes(UnsortedNodes) ->
         "fontname = \"Bitstream Vera Sans\"\nfontsize = 9\n" ++
         "node [ fontname = \"Bitstream Vera Sans\"\n fontsize = 9\n shape = \"ellipse\"\n ]\n" ++
         "edge [ fontname = \"Bitstream Vera Sans\"\n fontsize = 9\n ]\n",
-    % G4 = G ++ markup_for_guiding_connections(Nodes),
+    %G4 = G ++ markup_for_guiding_connections(Nodes),
     G4 = G ++ "",
-    G1 = G4 ++ lists:map(fun(Node) -> markup_for_node(Node) end, Nodes),
-    G3 = G1 ++ "subgraph cluster_fingertables {rake=min; " ++ lists:map(fun(Node) -> markup_for_finger_table(Node) end, Nodes),
+    G1  = G4  ++ lists:map(fun(Node) -> markup_for_node(Node) end, Nodes),
+    G11 = G1  ++ lists:map(fun(Node) -> markup_for_node_successor_edges(Node) end, Nodes),
+    %G12 = G11 ++ lists:map(fun(Node) -> markup_for_node_finger_edges(Node) end, Nodes),
+    G3 = G11 ++ "subgraph cluster_fingertables {rake=min; " ++ lists:map(fun(Node) -> markup_for_finger_table(Node) end, Nodes),
     G5 = G3 ++ ch_utils:each_with_index(Nodes, 
         fun(Node, Index) ->
-            case Index > 1 of
+            case Index > 1 andalso ((Index rem 4) =/= 0) of
                 true -> 
                   PreviousNode = lists:nth(Index - 1, Nodes),
                   io_lib:format("finger_table_~p -> finger_table_~p~n", [PreviousNode#srv_state.sha, Node#srv_state.sha]);
@@ -66,9 +68,12 @@ create_dot_from_nodes(UnsortedNodes) ->
             end
         end),
 
-    G6 = G5 ++ "}",
+    G6 = G5 ++ "}\n",
     G7 = G6 ++ "}\n",
-    G7.
+    {G8, TmpCircoFileName} = preprocess_with_circo(Nodes, G7),
+    ProcessedCircoFileName = add_finger_tables_to_circo_file(TmpCircoFileName, Nodes),
+    G9 = contents_of_file(ProcessedCircoFileName),
+    G9.
 
 % similar to ruby's #each_with_index:
 % lists:zip(L, lists:seq(1, length(L))).
@@ -78,31 +83,45 @@ markup_for_node(Node) ->
             gen_server:call(Node#srv_state.pid, {registered_name}), 
                             Node#srv_state.pid,
                             Node#srv_state.sha]), 
-    %O1 = O  ++ [markup_for_connection(Node, Finger, Index) || {Finger, Index} <- lists:zip(Node#srv_state.fingers, lists:seq(1, length(Node#srv_state.fingers)))],
-    % O1 = O  ++ [markup_for_connection(Node, Finger, Index) || {Finger, Index} <- lists:zip(Node#srv_state.fingers, lists:seq(1, 1))],
-    O1 = O  ++ markup_for_connection(Node, hd(Node#srv_state.fingers), 1),
-    O2 = O1 ++ markup_for_predecessor(Node, Node#srv_state.predecessor),
-    O2.
+    O.
 
+markup_for_node_successor_edges(Node) ->
+    O1 = markup_for_connection(Node, hd(Node#srv_state.fingers), 1),
+    O1.
+
+markup_for_node_finger_edges(Node) ->
+    FingerTableLen = length(Node#srv_state.fingers),
+    O1 = ch_utils:each_with_index(Node#srv_state.fingers, 
+        fun(Finger, Index) ->
+            case Index > 1 of
+                true -> 
+                  markup_for_connection(Node, Finger, Index);
+                false ->
+                  " "
+            end
+        end),
+    O1.
+
+    %O3 = O1 ++ markup_for_predecessor(Node, Node#srv_state.predecessor),
+    %O3.
 
 markup_for_connection(Node, Finger, Index) ->
-    {Color, Weight} = case Index > 1 of
+    {Color, Weight, Prefix} = case Index > 1 of
         true ->
-          {"gray80", 0};
+          {"gray80", 0, "// AFTER"};
         false ->
-          {"gray0", 2}
+          {"gray0", 2, ""}
     end,
     case Index > 1 andalso 
          lists:nth(Index, Node#srv_state.fingers) =:= lists:nth(Index - 1, Node#srv_state.fingers) of
         true -> []; % skip it
-        % false -> io_lib:format("~p -> ~p [label=~p, weight=~p]~n", [Node#srv_state.sha, Finger#finger.sha, Index, 1 / math:pow(Index, 2)])
         false -> io_lib:format("~p -> ~p [label=~p,constraint=~p,color=~p,weight=~p]~n", [Node#srv_state.sha, Finger#finger.sha, Index, Index < 2, Color, Weight])
     end.
 
 markup_for_predecessor(_Node, undefined) ->
     [];
 markup_for_predecessor(Node, Finger) ->
-    % io_lib:format("~p -> ~p [style=dashed,arrowhead=open,constraint=false]~n", [Node#srv_state.sha, Finger#finger.sha]).
+  % io_lib:format("~p -> ~p [style=dashed,arrowhead=open,constraint=false]~n", [Node#srv_state.sha, Finger#finger.sha]).
     io_lib:format("~p -> ~p [style=invis,arrowhead=open,constraint=false]~n", [Node#srv_state.sha, Finger#finger.sha]).
 
 markup_for_finger_table(Node) ->
@@ -123,3 +142,49 @@ sort_nodes_by_sha(Nodes) ->
         Elem1#srv_state.sha < Elem2#srv_state.sha
     end,
     Nodes).
+
+write_diagram_to_file(Nodename, I, J) -> 
+    Response = chordjerl_dot:generate_server_graph(Nodename),
+    FileName = io_lib:format("graphs/server_~p_~p.dot", [I, J]),
+    save_output_to_file(Response, FileName).
+
+save_output_to_file(Output, FileName) ->
+    io:format(user, "writing to ~s~n", [FileName]),
+    {ok, FileId} = file:open(FileName, [write]),
+    io:fwrite(FileId, "~s", [Output]),
+    file:close(FileId),
+    FileName.
+
+preprocess_with_circo(Nodes, Output) ->
+    TmpFileName      =  "/tmp/server_pre_circo.dot", % !! not thread safe, choose the Pid instead
+    TmpCircoFileName =  "/tmp/server_circo.dot", % !! not thread safe, choose the Pid instead
+    save_output_to_file(Output, TmpFileName),
+    CircoCmd = io_lib:format("circo ~p > ~p", [TmpFileName, TmpCircoFileName]),
+    os:cmd(CircoCmd),
+    {Output, TmpCircoFileName}.
+
+% sooo hackish. please no one read this method. nothing to see here, move along.
+add_finger_tables_to_circo_file(FileName, Nodes) ->
+    TmpFile = FileName ++ ".tmp",
+    os:cmd(io_lib:format("sed '$d' ~p > ~p", [FileName, TmpFile])),
+    Out   = lists:map(fun(Node) -> markup_for_node_finger_edges(Node) end, Nodes),
+    Out10 = Out ++ "}\n",
+    {ok, FileId} = file:open(TmpFile, [append]),
+    io:fwrite(FileId, "~s", [Out10]),
+    file:close(FileId),
+    TmpFile.
+
+contents_of_file(FileName) ->
+    ch_utils:readlines(FileName).
+
+render_file(Filename) ->
+    Format = "png",
+    RenderedFile = io_lib:format("~s.~s", [Filename, Format]),
+    Cmd = io_lib:format("neato -s -n2 -T~s -o ~s ~s", [Format, RenderedFile, Filename]),
+    io:format(user, "~s", [Cmd]),
+    os:cmd(Cmd),
+    Filename.
+
+
+% next -- do the sed cmd, and append the nodes finger table connectiosn to the end of the file and then save to the right place
+

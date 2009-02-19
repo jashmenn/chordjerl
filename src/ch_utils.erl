@@ -1,5 +1,6 @@
 -module(ch_utils).
 -export([max/1, list_replace_n/3, partition_integer/2, each_with_index/2]).
+-compile(export_all).
 
 % max from http://www.zorched.net/2008/05/28/erlang-example-min-and-max-element-of-a-list/
 max([H|T]) ->
@@ -37,3 +38,22 @@ partition_integer(L,_,Acc) ->
 
 each_with_index(L, X) -> 
     [ X(Element, Index) || {Element, Index} <- lists:zip(L, lists:seq(1, length(L))) ].
+
+
+% http://schemecookbook.org/Erlang/FileCountLines
+int_fold_lines(Device, Kons, Result) ->
+    case io:get_line(Device, "") of
+        eof  -> file:close(Device), Result;
+   Line -> NewResult = Kons(Line, Result),
+                int_fold_lines(Device, Kons, NewResult)
+    end.
+
+fold_file_lines(FileName, Kons, Knil) ->
+    {ok, Device} = file:open(FileName,[read]),
+    int_fold_lines(Device, Kons, Knil).
+
+countlines(FileName) ->
+  fold_file_lines(FileName, fun(L,R) -> R + 1 end, 0).
+
+readlines(FileName) ->
+    fold_file_lines(FileName, fun(L,R) -> R ++ [L] end, []).

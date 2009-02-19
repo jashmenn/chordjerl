@@ -35,7 +35,7 @@ generate_diagram_test_() ->
   {
       setup, fun setup/0,
       fun () ->
-         write_diagram_to_file(testnode5, 0, 0),
+         chordjerl_dot:write_diagram_to_file(testnode5, 0, 0),
 
          Max = 5,
          Iterations = 50,
@@ -43,25 +43,16 @@ generate_diagram_test_() ->
                      NodeName     = list_to_atom("testnode" ++ integer_to_list(I)),
                      gen_server:call(NodeName, {stabilize}),
                      gen_server:call(NodeName, {fix_fingers}),
-                     %write_diagram_to_file(testnode5, I, J),
+                     %chordjerl_dot:write_diagram_to_file(testnode5, I, J),
                      ok
               end)() || I <- lists:seq(1, Max) ]
          || J <- lists:seq(1, Iterations) ],
 
-         write_diagram_to_file(testnode5, done, done),
+         chordjerl_dot:write_diagram_to_file(testnode5, done, done),
 
          {ok}
       end
   }.
-
-write_diagram_to_file(Nodename, I, J) -> 
-    Response = chordjerl_dot:generate_server_graph(Nodename),
-    FileName = io_lib:format("graphs/server_~p_~p.dot", [I, J]),
-    io:format(user, "writing to ~s~n", [FileName]),
-    {ok, FileId} = file:open(FileName, [write]),
-    io:fwrite(FileId, "~s~n", [Response]),
-    file:close(FileId).
-
 
 
 setup2() ->
@@ -91,7 +82,7 @@ generate_dynamic_diagram_test_() ->
          ],
 
          % stabilize each node a few times
-         Iterations = 7,
+         Iterations = 50,
          [ [ (fun() ->
                      NodeName     = list_to_atom("testnode" ++ integer_to_list(I)),
                      gen_server:call(NodeName, {stabilize}),
@@ -100,18 +91,18 @@ generate_dynamic_diagram_test_() ->
          || J <- lists:seq(1, Iterations) ],
 
          LastNodeName = list_to_atom("testnode" ++ integer_to_list(Max)),
-         write_diagram_to_file(LastNodeName, large, first),
+         chordjerl_dot:write_diagram_to_file(LastNodeName, large, first),
 
          io:format(user, "===================================~n", []),
-         gen_server:call(testnode2, {stabilize}),
-         % gen_server:call(testnode2, {fix_fingers}),
+         gen_server:call(testnode4, {fix_fingers}),
          % gen_server:call(testnode2, {fix_fingers}),
          % gen_server:call(testnode2, {fix_fingers}),
          % gen_server:call(testnode2, {fix_fingers}),
          % gen_server:call(testnode2, {fix_fingers}),
          % gen_server:call(testnode2, {stabilize}),
 
-         write_diagram_to_file(LastNodeName, large, done),
+         FileName = chordjerl_dot:write_diagram_to_file(LastNodeName, large, done),
+         chordjerl_dot:render_file(FileName),
 
          {ok}
       end
