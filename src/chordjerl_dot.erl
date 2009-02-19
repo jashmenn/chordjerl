@@ -45,16 +45,30 @@ collect_all_fingers(Node, D) ->
        D0, Fingers),
    D1.
 
-create_dot_from_nodes(Nodes) -> 
+create_dot_from_nodes(UnsortedNodes) -> 
+    Nodes = sort_nodes_by_sha(UnsortedNodes),
     G = "digraph messenger {\n" ++
         "fontname = \"Bitstream Vera Sans\"\nfontsize = 9\n" ++
         "node [ fontname = \"Bitstream Vera Sans\"\n fontsize = 9\n shape = \"ellipse\"\n ]\n" ++
         "edge [ fontname = \"Bitstream Vera Sans\"\n fontsize = 9\n ]\n",
-    G4 = G ++ markup_for_guiding_connections(Nodes),
+    % G4 = G ++ markup_for_guiding_connections(Nodes),
+    G4 = G ++ "",
     G1 = G4 ++ lists:map(fun(Node) -> markup_for_node(Node) end, Nodes),
-    G3 = G1 ++ "subgraph cluster_fingertables {rake=min; " ++ lists:map(fun(Node) -> markup_for_finger_table(Node) end, Nodes) ++ "}",
-    G2 = G3 ++ "}\n",
-    G2.
+    G3 = G1 ++ "subgraph cluster_fingertables {rake=min; " ++ lists:map(fun(Node) -> markup_for_finger_table(Node) end, Nodes),
+    G5 = G3 ++ ch_utils:each_with_index(Nodes, 
+        fun(Node, Index) ->
+            case Index > 1 of
+                true -> 
+                  PreviousNode = lists:nth(Index - 1, Nodes),
+                  io_lib:format("finger_table_~p -> finger_table_~p~n", [PreviousNode#srv_state.sha, Node#srv_state.sha]);
+                false ->
+                  " "
+            end
+        end),
+
+    G6 = G5 ++ "}",
+    G7 = G6 ++ "}\n",
+    G7.
 
 % similar to ruby's #each_with_index:
 % lists:zip(L, lists:seq(1, length(L))).
@@ -64,7 +78,9 @@ markup_for_node(Node) ->
             gen_server:call(Node#srv_state.pid, {registered_name}), 
                             Node#srv_state.pid,
                             Node#srv_state.sha]), 
-    O1 = O  ++ [markup_for_connection(Node, Finger, Index) || {Finger, Index} <- lists:zip(Node#srv_state.fingers, lists:seq(1, length(Node#srv_state.fingers)))],
+    %O1 = O  ++ [markup_for_connection(Node, Finger, Index) || {Finger, Index} <- lists:zip(Node#srv_state.fingers, lists:seq(1, length(Node#srv_state.fingers)))],
+    % O1 = O  ++ [markup_for_connection(Node, Finger, Index) || {Finger, Index} <- lists:zip(Node#srv_state.fingers, lists:seq(1, 1))],
+    O1 = O  ++ markup_for_connection(Node, hd(Node#srv_state.fingers), 1),
     O2 = O1 ++ markup_for_predecessor(Node, Node#srv_state.predecessor),
     O2.
 
@@ -92,20 +108,8 @@ markup_for_predecessor(Node, Finger) ->
 markup_for_finger_table(Node) ->
     Fingers = [io_lib:format("~p: ~p  (+~p gte ~p)\\l", [Index, Finger#finger.sha, round(math:pow(2, Index - 1)), ch_id_utils:successor_id(Node#srv_state.sha, Index)]) || {Finger, Index} <- lists:zip(Node#srv_state.fingers, lists:seq(1, length(Node#srv_state.fingers)))],
     Name = gen_server:call(Node#srv_state.pid, {registered_name}),
-    O  = io_lib:format("~p_finger_table [label=\"{~p fingers (~p)|~s}\", shape=record]~n", [Name, Name, Node#srv_state.sha, Fingers]),
+    O  = io_lib:format("finger_table_~p [label=\"{~p fingers (~p)|~s}\", shape=record]~n", [Node#srv_state.sha, Name, Node#srv_state.sha, Fingers]),
     O.
-% { 
-%   rake = same;
-%   edge [style=invis];
-%   topnode [shape=record, style=invis];
-%   topnode:4 -> 4
-%   topnode:14 -> 14
-%   topnode:16 -> 16
-%   topnode:23 -> 23
-%   topnode:81 -> 81
-%   topnode:91 -> 91
-%   topnode:95 -> 95
-% }
 
 markup_for_guiding_connections(Nodes) ->
     G   = "{\nrake = same;\nedge [style=invis];\ntopnode [shape=record, style=invis];\n",
@@ -113,3 +117,9 @@ markup_for_guiding_connections(Nodes) ->
     G10 = G ++ [io_lib:format("topnode:~p -> ~p~n", [Pid, Pid]) || Pid <- Pids],
     G20 = G10 ++ "}\n",
     G30 = G20.
+
+sort_nodes_by_sha(Nodes) ->
+    lists:sort(fun(Elem1, Elem2) ->
+        Elem1#srv_state.sha < Elem2#srv_state.sha
+    end,
+    Nodes).
