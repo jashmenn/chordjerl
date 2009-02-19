@@ -30,6 +30,10 @@ Chordjerl is designed to work with Ari Lerner's `layers` <http://github.com/ause
 Screenshots
 ===========
 
-Here's a simple network where each node has 1 finger. Dotted lines denote predecessors. (m=7)
+Here's a simple network of 7 nodes where m (the number of bits in the hash function) = 7
 
-![nodes!](http://github.com/jashmenn/chordjerl/tree/master/doc/simple_nodes.png?raw=true)
+![nodes!](http://github.com/jashmenn/chordjerl/tree/master/doc/server_m-7_7_nodes.png?raw=true)
+
+Here's a a more complex, but stable, network of 20 nodes with m=15
+
+![nodes!](http://github.com/jashmenn/chordjerl/tree/master/doc/server_m-15_20-nodes-low.gif?raw=true)
