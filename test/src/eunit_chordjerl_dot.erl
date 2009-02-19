@@ -104,11 +104,11 @@ generate_dynamic_diagram_test_() ->
 
          io:format(user, "===================================~n", []),
          gen_server:call(testnode2, {stabilize}),
-         gen_server:call(testnode2, {fix_fingers}),
-         gen_server:call(testnode2, {fix_fingers}),
-         gen_server:call(testnode2, {fix_fingers}),
-         gen_server:call(testnode2, {fix_fingers}),
-         gen_server:call(testnode2, {fix_fingers}),
+         % gen_server:call(testnode2, {fix_fingers}),
+         % gen_server:call(testnode2, {fix_fingers}),
+         % gen_server:call(testnode2, {fix_fingers}),
+         % gen_server:call(testnode2, {fix_fingers}),
+         % gen_server:call(testnode2, {fix_fingers}),
          % gen_server:call(testnode2, {stabilize}),
 
          write_diagram_to_file(LastNodeName, large, done),

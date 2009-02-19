@@ -336,20 +336,22 @@ handle_closest_preceding_node(_Id, State, []) ->
 %%--------------------------------------------------------------------
 handle_stabilize(State) ->
     {Successor, _State} = handle_immediate_successor(State), 
-    case Successor#finger.sha =:= State#srv_state.sha of
-        true ->
-            {ok, State}; % our sucessor is ourself, don't do anything
-        false ->
-            handle_stabilize(State, Successor)
-    end.
+    handle_stabilize(State, Successor).
 
 %%--------------------------------------------------------------------
 %% Function: handle_stabilize(State, Successor) -> 
 %% Arguments: Successor must not be self as a finger 
 %%--------------------------------------------------------------------
 handle_stabilize(State, Successor) ->
-    ?NTRACE("stabilizing", []),
-    SuccPred = case chordjerl_com:send(Successor, {return_predecessor}) of
+%    ?NTRACE("stabilizing", []),
+    SuccPred01 = case Successor#finger.sha =:= State#srv_state.sha of
+        true ->
+            handle_return_predecessor(State);
+        false ->
+            chordjerl_com:send(Successor, {return_predecessor})
+    end,
+
+    SuccPred = case SuccPred01 of
         {finger, Finger} -> Finger;
         _                -> undefined
     end,
