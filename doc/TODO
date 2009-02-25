@@ -1,0 +1,11 @@
++ finish up some tests oon finger tables and successor lists
+* create successor lists as record attribute and not just the hd of fingers
+* write timers to periodically call stabilize and fix fingers
+* update stabilization to use successor list
+  * grab the first present successor's successor list in case of failure
+* figure out a nice way to detect node failure with ari
+* use that node failure method to detect failed predecessors, successors
+  * actually, what you're going to find is that *every* call to another node needs
+    to call with a timeout. if it times out you need to a) update state
+    accordingly b) retry with the next node of that type
+* closest preceeding node needs to be updated with the new successor list
