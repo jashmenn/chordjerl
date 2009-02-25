@@ -62,8 +62,9 @@ generate_dynamic_diagram_test_() ->
 % generate_dynamic_diagram() ->
   {
       setup, fun setup2/0,
+      {timeout, 300, 
       fun () ->
-         Max = 7,
+         Max = 36,
          [
              (fun() ->
                  PrevNodeName = list_to_atom("testnode" ++ integer_to_list(I - 1)),
@@ -82,7 +83,7 @@ generate_dynamic_diagram_test_() ->
          ],
 
          % stabilize each node a few times
-         Iterations = 50,
+         Iterations = 1000,
          [ [ (fun() ->
                      NodeName     = list_to_atom("testnode" ++ integer_to_list(I)),
                      gen_server:call(NodeName, {stabilize}),
@@ -94,7 +95,7 @@ generate_dynamic_diagram_test_() ->
          chordjerl_dot:write_diagram_to_file(LastNodeName, large, first),
 
          io:format(user, "===================================~n", []),
-         gen_server:call(testnode4, {fix_fingers}),
+         % gen_server:call(testnode4, {fix_fingers}),
          % gen_server:call(testnode2, {fix_fingers}),
          % gen_server:call(testnode2, {fix_fingers}),
          % gen_server:call(testnode2, {fix_fingers}),
@@ -102,10 +103,13 @@ generate_dynamic_diagram_test_() ->
          % gen_server:call(testnode2, {stabilize}),
 
          FileName = chordjerl_dot:write_diagram_to_file(LastNodeName, large, done),
+         io:format(user, "2 ===================================~n", []),
          chordjerl_dot:render_file(FileName),
+         io:format(user, "3 ===================================~n", []),
 
          {ok}
       end
+      }
   }.
 
 

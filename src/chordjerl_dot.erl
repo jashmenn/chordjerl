@@ -55,8 +55,17 @@ create_dot_from_nodes(UnsortedNodes) ->
     G4 = G ++ "",
     G1  = G4  ++ lists:map(fun(Node) -> markup_for_node(Node) end, Nodes),
     G11 = G1  ++ lists:map(fun(Node) -> markup_for_node_successor_edges(Node) end, Nodes),
-    %G12 = G11 ++ lists:map(fun(Node) -> markup_for_node_finger_edges(Node) end, Nodes),
-    G3 = G11 ++ "subgraph cluster_fingertables {rake=min; " ++ lists:map(fun(Node) -> markup_for_finger_table(Node) end, Nodes),
+    G12 = G11 ++ lists:map(fun(Node) -> markup_for_node_finger_edges(Node) end, Nodes),
+    % G6  = G12 ++ markup_for_all_finger_tables(Nodes),
+    G6  = G12 ++ "",
+    G7 = G6 ++ "}\n",
+    {G8, TmpCircoFileName} = preprocess_with_circo(Nodes, G7),
+    ProcessedCircoFileName = add_finger_tables_to_circo_file(TmpCircoFileName, Nodes),
+    G9 = contents_of_file(ProcessedCircoFileName),
+    G9.
+
+markup_for_all_finger_tables(Nodes) ->
+    G3 = "subgraph cluster_fingertables {rake=min; " ++ lists:map(fun(Node) -> markup_for_finger_table(Node) end, Nodes),
     G5 = G3 ++ ch_utils:each_with_index(Nodes, 
         fun(Node, Index) ->
             case Index > 1 andalso ((Index rem 4) =/= 0) of
@@ -67,13 +76,8 @@ create_dot_from_nodes(UnsortedNodes) ->
                   " "
             end
         end),
+    G6 = G5 ++ "}\n".
 
-    G6 = G5 ++ "}\n",
-    G7 = G6 ++ "}\n",
-    {G8, TmpCircoFileName} = preprocess_with_circo(Nodes, G7),
-    ProcessedCircoFileName = add_finger_tables_to_circo_file(TmpCircoFileName, Nodes),
-    G9 = contents_of_file(ProcessedCircoFileName),
-    G9.
 
 % similar to ruby's #each_with_index:
 % lists:zip(L, lists:seq(1, length(L))).
@@ -181,7 +185,7 @@ render_file(Filename) ->
     Format = "png",
     RenderedFile = io_lib:format("~s.~s", [Filename, Format]),
     Cmd = io_lib:format("neato -s -n2 -T~s -o ~s ~s", [Format, RenderedFile, Filename]),
-    io:format(user, "~s", [Cmd]),
+    io:format(user, "~s~n", [Cmd]),
     os:cmd(Cmd),
     Filename.
 
