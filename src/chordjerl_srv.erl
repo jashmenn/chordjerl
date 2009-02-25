@@ -151,7 +151,8 @@ get_finger_ref() ->
 %%--------------------------------------------------------------------
 init([]) ->
     ShaInt = make_sha([]),
-    {ok, #srv_state{sha=ShaInt,pid=self(),predecessor=undefined,next=0}}.
+    {ok, TRef} = timer:send_interval(timer:minutes(60), run_stabilization_tasks), % stub
+    {ok, #srv_state{sha=ShaInt,pid=self(),predecessor=undefined,next=0,tref=TRef}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -239,6 +240,9 @@ handle_cast(_Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
+handle_info(run_stabilization_tasks, State) -> % can run timers to stabilize etc here
+    Now = stamp(), 
+    {noreply, State};
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -528,3 +532,6 @@ finger_before(N, Fingers) ->
       false ->
         lists:last(Fingers) % loop "back around" and return the last finger
     end.
+
+stamp() ->
+    erlang:localtime().
