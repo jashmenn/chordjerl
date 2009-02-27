@@ -70,7 +70,7 @@ join(OtherNode) ->
 
 %%--------------------------------------------------------------------
 %% Function: find_successor(Id) -> 
-%% Description: find best/cloest known successor of Id
+%% Description: find best/closest known successor of Id
 %%--------------------------------------------------------------------
 find_successor(Id) ->
     gen_server:call(?SERVER, {find_successor, Id}).
