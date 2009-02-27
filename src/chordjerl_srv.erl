@@ -12,7 +12,7 @@
 %% API
 -export([
          start/0,
-         start_link/0,
+         start_link/1,
          start_named/1,
          create_ring/0,
          join/1,
@@ -42,14 +42,14 @@
 %% Description: Alias for start_link
 %%--------------------------------------------------------------------
 start() ->
-    start_link(). 
+    start_link(?DEFAULT_CONFIG). 
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(Config) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Config], []).
 
 %% for testing multiple servers
 start_named(Name) ->
@@ -151,7 +151,7 @@ get_finger_ref() ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([]) ->
+init([Config]) ->
     ShaInt = make_sha([]),
     {ok, TRef} = timer:send_interval(timer:minutes(60), run_stabilization_tasks), % stub
     {ok, #srv_state{sha=ShaInt,pid=self(),predecessor=undefined,next=0,tref=TRef}}.

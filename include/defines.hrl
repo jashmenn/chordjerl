@@ -9,6 +9,8 @@
 -define (MAXFINGERS, ?NBIT). % number of bits in the hash function
 -define (NBITMOD, round(math:pow(2, ?NBIT))).
 
+-define (DEFAULT_CONFIG, []).
+
 % may merge finger-like attributes into the srv state. Maybe
 % srv_state.finger_of_self?
 -record(srv_state, {
