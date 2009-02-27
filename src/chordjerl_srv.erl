@@ -17,6 +17,7 @@
          create_ring/0,
          join/1,
          find_successor/1,
+         lookup/1,
          closest_preceding_node/1,
          stabilize/0,
          claim_to_be_predecessor/1,
@@ -72,6 +73,7 @@ join(OtherNode) ->
 %% Function: find_successor(Id) -> 
 %% Description: find best/closest known successor of Id
 %%--------------------------------------------------------------------
+lookup(Id) -> find_successor(Id).
 find_successor(Id) ->
     gen_server:call(?SERVER, {find_successor, Id}).
 
