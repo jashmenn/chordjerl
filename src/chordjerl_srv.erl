@@ -12,11 +12,12 @@
 %% API
 -export([
          start/0,
-         start_link/0,
+         start_link/1,
          start_named/1,
          create_ring/0,
          join/1,
          find_successor/1,
+         lookup/1,
          closest_preceding_node/1,
          stabilize/0,
          claim_to_be_predecessor/1,
@@ -41,14 +42,14 @@
 %% Description: Alias for start_link
 %%--------------------------------------------------------------------
 start() ->
-    start_link(). 
+    start_link(?DEFAULT_CONFIG). 
 
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(Config) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Config], []).
 
 %% for testing multiple servers
 start_named(Name) ->
@@ -72,6 +73,7 @@ join(OtherNode) ->
 %% Function: find_successor(Id) -> 
 %% Description: find best/closest known successor of Id
 %%--------------------------------------------------------------------
+lookup(Id) -> find_successor(Id).
 find_successor(Id) ->
     gen_server:call(?SERVER, {find_successor, Id}).
 
@@ -149,10 +151,17 @@ get_finger_ref() ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([]) ->
+init([Config]) ->
+    [Comm] = config:fetch_or_default_config([comm], Config, ?DEFAULT_CONFIG),
     ShaInt = make_sha([]),
     {ok, TRef} = timer:send_interval(timer:minutes(60), run_stabilization_tasks), % stub
-    {ok, #srv_state{sha=ShaInt,pid=self(),predecessor=undefined,next=0,tref=TRef}}.
+    {ok, #srv_state{
+                  sha=ShaInt,
+                  pid=self(),
+                  predecessor=undefined,
+                  next=0,
+                  tref=TRef,
+                  comm=Comm}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -270,14 +279,14 @@ handle_create_ring(State) ->
     NewState = State#srv_state{predecessor=undefined, fingers=[]},
     {ok, NewState}.
 
-handle_join(Finger, State) ->
+handle_join(Finger, #srv_state{comm = Comm} = State) ->
     % ?NTRACE("handle_join", [{State#srv_state.pid, State#srv_state.sha}, {joining, Finger#finger.pid} ]),
-    Response = chordjerl_com:send(Finger, {find_successor, State#srv_state.sha}),
+    Response = Comm:send(Finger, {find_successor, State#srv_state.sha}),
     case Response of
         {ok, NewFinger} -> 
             NewFingers   = [NewFinger|State#srv_state.fingers],
             NewState     = State#srv_state{fingers=NewFingers},
-            _Response = chordjerl_com:send(Finger, {joined_by, make_finger_from_self(State)}), % tell the node we joined it
+            _Response = Comm:send(Finger, {joined_by, make_finger_from_self(State)}), % tell the node we joined it
             {ok, NewState};
         _Err ->
             ?NTRACE("bad response", Response),
@@ -299,7 +308,7 @@ handle_joined_by(_Finger, State) ->
 %% Description: find the successor of Id
 %% returns in finger format
 %%--------------------------------------------------------------------
-handle_find_successor(Id, State) -> % could use a refactoring...
+handle_find_successor(Id, #srv_state{comm = Comm} = State) -> % could use a refactoring...
     SuccessorFinger = successor(State),
     SuccessorId = SuccessorFinger#finger.sha,
     case ch_id_utils:id_between_oc(State#srv_state.sha, SuccessorId, Id) of
@@ -311,7 +320,7 @@ handle_find_successor(Id, State) -> % could use a refactoring...
              true -> % hmm, suspecious clause here.
                 {{ok, Finger}, State};
              false ->
-                {chordjerl_com:send(Finger, {find_successor, Id}), State}
+                {Comm:send(Finger, {find_successor, Id}), State}
            end
     end.
 
@@ -346,13 +355,13 @@ handle_stabilize(State) ->
 %% Function: handle_stabilize(State, Successor) -> 
 %% Arguments: Successor must not be self as a finger 
 %%--------------------------------------------------------------------
-handle_stabilize(State, Successor) ->
+handle_stabilize(#srv_state{comm = Comm} = State, Successor) ->
 %    ?NTRACE("stabilizing", []),
     SuccPred01 = case Successor#finger.sha =:= State#srv_state.sha of
         true ->
             handle_return_predecessor(State);
         false ->
-            chordjerl_com:send(Successor, {return_predecessor})
+            Comm:send(Successor, {return_predecessor})
     end,
 
     SuccPred = case SuccPred01 of
@@ -378,7 +387,7 @@ handle_stabilize(State, Successor) ->
     end,
 
     {SelfAsFinger, _State} = handle_return_finger_ref(State),
-    Response = chordjerl_com:send(RealSuccessor, {claim_to_be_predecessor, SelfAsFinger}),
+    Response = Comm:send(RealSuccessor, {claim_to_be_predecessor, SelfAsFinger}),
     {Response, NewState}.
 
 handle_return_predecessor(State) ->
