@@ -441,7 +441,6 @@ handle_fix_fingers(State) ->
 % this way we dont have to look for all the extras every single time
 % if it isn't set it as fingers[Next]
 handle_fix_fingers(State, Next) ->
-    ?NTRACE("fixing fingers", Next),
     TargetId = ch_id_utils:successor_id(State#srv_state.sha, Next),
     {{ok, Successor}, _NewState} = handle_find_successor(TargetId, State),
 

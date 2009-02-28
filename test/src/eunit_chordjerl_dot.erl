@@ -48,7 +48,7 @@ generate_diagram_test_() ->
               end)() || I <- lists:seq(1, Max) ]
          || J <- lists:seq(1, Iterations) ],
 
-         chordjerl_dot:write_diagram_to_file(testnode5, done, done),
+         %chordjerl_dot:write_diagram_to_file(testnode5, done, done),
 
          {ok}
       end
@@ -59,7 +59,6 @@ setup2() ->
     {ok}.
 
 generate_dynamic_diagram_test_() ->
-% generate_dynamic_diagram() ->
   {
       setup, fun setup2/0,
       {timeout, 300, 
@@ -92,20 +91,9 @@ generate_dynamic_diagram_test_() ->
          || J <- lists:seq(1, Iterations) ],
 
          LastNodeName = list_to_atom("testnode" ++ integer_to_list(Max)),
-         chordjerl_dot:write_diagram_to_file(LastNodeName, large, first),
-
-         io:format(user, "===================================~n", []),
-         % gen_server:call(testnode4, {fix_fingers}),
-         % gen_server:call(testnode2, {fix_fingers}),
-         % gen_server:call(testnode2, {fix_fingers}),
-         % gen_server:call(testnode2, {fix_fingers}),
-         % gen_server:call(testnode2, {fix_fingers}),
-         % gen_server:call(testnode2, {stabilize}),
-
-         FileName = chordjerl_dot:write_diagram_to_file(LastNodeName, large, done),
-         io:format(user, "2 ===================================~n", []),
-         chordjerl_dot:render_file(FileName),
-         io:format(user, "3 ===================================~n", []),
+         % chordjerl_dot:write_diagram_to_file(LastNodeName, large, first),
+         % FileName = chordjerl_dot:write_diagram_to_file(LastNodeName, large, done),
+         % chordjerl_dot:render_file(FileName),
 
          {ok}
       end
