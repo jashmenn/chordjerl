@@ -14,7 +14,9 @@
 -define (NBIT, 160). % number of bits in the hash function
 -endif.
 
--define (DEFAULT_CONFIG, []).
+-define (DEFAULT_CONFIG,  [
+                            {comm, chordjerl_com}
+                          ]).
 
 % may merge finger-like attributes into the srv state. Maybe
 % srv_state.finger_of_self?
@@ -27,7 +29,9 @@
     pid,
     ip,
     port,
-    next % the index of the next finger to fix
+    next, % the index of the next finger to fix
+    % Other options
+    comm    % 
   }).
 
 -record(finger, {
